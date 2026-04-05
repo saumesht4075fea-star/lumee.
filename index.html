@@ -1,298 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumee Ebook Store</title>
-    <!--
-        *** IMPORTANT: Include the PocketBase JS client library ***
-        Download pocketbase.umd.js from https://github.com/pocketbase/pocketbase/releases/latest/download/pocketbase.umd.js
-        Place it in a 'lib' folder in your project's root: your_project/lib/pocketbase.umd.js
-        Then uncomment the line below:
-    -->
-    <script src="./lib/pocketbase.umd.js"></script>
-
-    <style>
-        /* Basic Styling - We can make this "premium" later! */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; line-height: 1.6; }
-        .container { max-width: 1200px; margin: 20px auto; padding: 20px 30px; background-color: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        header { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
-        h1 { color: #2c3e50; font-size: 2.8em; margin-bottom: 10px; }
-        h1 span { color: #3498db; } /* Accent color for a part of the title */
-        header p { color: #7f8c8d; font-size: 1.1em; }
-
-        nav { text-align: right; margin-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: 15px; }
-        nav .auth-info { font-size: 0.9em; color: #555; }
-        nav button { background-color: #3498db; color: white; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; transition: background-color 0.3s ease; }
-        nav button:hover { background-color: #2980b9; }
-        nav button.logout-btn { background-color: #e74c3c; }
-        nav button.logout-btn:hover { background-color: #c0392b; }
-
-        .ebooks-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 30px; }
-        .ebook-card { background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; overflow: hidden; }
-        .ebook-card:hover { transform: translateY(-5px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
-        .ebook-card img { max-width: 100%; height: 200px; object-fit: contain; border-radius: 8px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto; }
-        .ebook-card h3 { margin-top: 0; color: #2c3e50; font-size: 1.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ebook-card p { font-size: 0.95em; color: #555; margin-bottom: 8px; }
-        .ebook-card .price { font-weight: bold; color: #27ae60; font-size: 1.2em; margin-bottom: 15px; }
-        .ebook-card .description { font-size: 0.85em; color: #777; height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; transition: opacity 0.3s ease; opacity: 0; }
-        .modal.active { display: flex; opacity: 1; }
-        .modal-content { background-color: #fff; padding: 35px; border-radius: 10px; max-width: 450px; width: 90%; box-shadow: 0 5px 25px rgba(0,0,0,0.2); position: relative; animation: modalFadeIn 0.3s ease-out; }
-        @keyframes modalFadeIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        .close-button { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #777; transition: color 0.3s ease; }
-        .close-button:hover { color: #333; }
-        .modal-content h2 { text-align: center; color: #34495e; margin-bottom: 25px; font-size: 1.8em; }
-        form div { margin-bottom: 20px; }
-        form label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
-        form input[type="text"], form input[type="password"], form input[type="email"] { width: calc(100% - 24px); padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
-        form input[type="text"]:focus, form input[type="password"]:focus, form input[type="email"]:focus { border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); outline: none; }
-        form button { background-color: #2ecc71; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1.1em; width: 100%; transition: background-color 0.3s ease; margin-top: 10px; }
-        form button:hover { background-color: #27ae60; }
-        .error-message { color: #e74c3c; margin-top: 15px; text-align: center; font-size: 0.9em; display: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumee — Premium Ebook Store</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<!-- Link to your external CSS file -->
+<link rel="stylesheet" href="style.css"> 
 </head>
 <body>
-    <div class="container">
-        <header>
-            <nav>
-                <div id="auth-status" class="auth-info">Not logged in</div>
-                <button id="signin-btn" onclick="openSignInModal()">Sign In</button>
-                <button id="register-btn" onclick="openRegisterModal()">Register</button>
-                <button id="logout-btn" class="logout-btn" style="display: none;">Logout</button>
-            </nav>
-            <h1>Lumee <span>Ebook Store</span></h1>
-            <p>Discover captivating stories and knowledge at your fingertips.</p>
-        </header>
 
-        <main>
-            <h2 style="text-align: center; color: #34495e; margin-bottom: 25px;">Our Collection</h2>
-            <div id="ebooks-display" class="ebooks-grid">
-                <!-- Ebook cards will be dynamically loaded here by JavaScript -->
-                <p style="text-align: center; grid-column: 1 / -1;">Loading ebooks...</p>
-            </div>
-        </main>
-    </div>
+<header>
+<div class="wrap nav">
+<a class="brand" onclick="showSection('home')">Lumee</a>
+<nav>
+<a onclick="showSection('books')">Books</a>
+<a onclick="showSection('about')">About</a>
+<span id="authControls">
+<!-- Dummy auth controls, no functionality -->
+<button onclick="alert('Sign In functionality removed!')">Sign In</button>
+<button onclick="alert('Register functionality removed!')">Register</button>
+</span>
+</nav>
+</div>
+</header>
 
-    <!-- Sign In Modal -->
-    <div id="signin-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal('signin-modal')">&times;</span>
-            <h2>Sign In</h2>
-            <form id="signin-form">
-                <div>
-                    <label for="signin-email">Email:</label>
-                    <input type="email" id="signin-email" required>
-                </div>
-                <div>
-                    <label for="signin-password">Password:</label>
-                    <input type="password" id="signin-password" required>
-                </div>
-                <button type="submit">Sign In</button>
-                <p class="error-message" id="signin-error"></p>
-            </form>
-        </div>
-    </div>
+<main style="display:flex; flex-direction:column; flex-grow:1;">
 
-    <!-- Register Modal -->
-    <div id="register-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeModal('register-modal')">&times;</span>
-            <h2>Register</h2>
-            <form id="register-form">
-                <div>
-                    <label for="register-email">Email:</label>
-                    <input type="email" id="register-email" required>
-                </div>
-                <div>
-                    <label for="register-password">Password:</label>
-                    <input type="password" id="register-password" required>
-                </div>
-                <div>
-                    <label for="register-confirm-password">Confirm Password:</label>
-                    <input type="password" id="register-confirm-password" required>
-                </div>
-                <button type="submit">Register</button>
-                <p class="error-message" id="register-error"></p>
-            </form>
-        </div>
-    </div>
+<!-- HOME Section -->
+<section id="home" class="page-section active">
+<div class="hero">
+<div class="wrap">
+<h1>Read better. Think deeper.</h1>
+<p>Curated ebooks on design, business, and technology. Instant download, lifetime access.</p>
+<button class="btn" onclick="showSection('books')">Explore All Ebooks</button>
+</div>
+</div>
+<div class="wrap">
+<h2 class="section-title">Featured Ebooks</h2>
+<div class="loading-message" id="homepage-loading">Loading featured ebooks...</div>
+<div class="error-message" id="homepage-error" style="display: none;">Failed to load featured ebooks.</div>
+<div class="product-grid" id="homepage-ebook-list">
+<!-- Content populated by JS from PocketBase -->
+</div>
+</div>
+</section>
 
-    <script>
-        // --- Configuration: IMPORTANT! Replace with your actual Render backend URL and collection name ---
-        const PB_URL = 'YOUR_POCKETBASE_BACKEND_URL_HERE'; // e.g., 'https://lumee-pocketbase-backend.onrender.com'
-        const EBOOK_COLLECTION_NAME = 'YOUR_EBOOK_COLLECTION_NAME_HERE'; // e.g., 'ebooks' or 'products'
+<!-- BOOKS Section -->
+<section id="books" class="page-section">
+<div class="wrap">
+<h2 class="section-title">Our Full Collection</h2>
+<div class="search-input-container">
+<input type="text" id="searchInput" onkeyup="filterBooks()" placeholder="Search by title or author...">
+</div>
+<div class="loading-message" id="allbooks-loading">Loading all ebooks...</div>
+<div class="error-message" id="allbooks-error" style="display: none;">Failed to load all ebooks.</div>
+<div class="product-grid" id="all-books-list">
+<!-- Content populated by JS from PocketBase -->
+</div>
+</div>
+</section>
 
-        // --- Ebook Collection Field Names (Match these to your PocketBase fields) ---
-        const EBOOK_FIELD_TITLE = 'title';     // e.g., 'name' or 'bookTitle'
-        const EBOOK_FIELD_AUTHOR = 'author';   // e.g., 'writer'
-        const EBOOK_FIELD_PRICE = 'price';     // e.g., 'cost'
-        const EBOOK_FIELD_DESCRIPTION = 'description'; // e.g., 'details'
-        const EBOOK_FIELD_COVER_IMAGE = 'cover_image'; // e.g., 'thumbnail' or 'image'
+<!-- ABOUT Section -->
+<section id="about" class="page-section">
+<div class="wrap" style="text-align:center;">
+<h2 class="section-title">About Lumee</h2>
+<p style="color:var(--muted);line-height:1.7;max-width:760px;margin:0 auto;">
+Lumee is a minimalist ebook store dedicated to providing high-quality digital books
+for curious minds. We believe in knowledge that empowers and inspires,
+curating titles across design, business, and technology.
+Every purchase grants you instant access and lifetime ownership of your digital reads.
+Our mission is to make insightful literature accessible and enjoyable for everyone.
+<br><br>
+Reach out to us at <a href="mailto:info@lumee.com" style="color:var(--accent);text-decoration:none;">info@lumee.com</a>
+for inquiries or collaborations.
+</p>
+</div>
+</section>
 
-        // Initialize PocketBase client
-        const pb = new PocketBase(PB_URL);
+<!-- Ebook Detail Page Section -->
+<section id="ebook-detail" class="page-section">
+<div class="wrap">
+<div class="back-button-container">
+<button class="back-button" onclick="goBackToPreviousSection()"> &larr; Back to Books</button>
+</div>
+<div id="ebook-detail-content">
+<div id="ebook-detail-main">
+<img id="ebook-detail-cover-img" src="" alt="Book cover">
+<div id="ebook-detail-info">
+<h2 id="ebook-detail-title"></h2>
+<div class="author" id="ebook-detail-author"></div>
+<div class="price" id="ebook-detail-price"></div>
+<p id="ebook-detail-description"></p>
+<a id="ebook-detail-buy-btn" class="btn detail-buy-btn" target="_blank" rel="noopener noreferrer">Buy / Download Ebook</a>
+</div>
+</div>
 
-        // --- UI Modal Functions ---
-        function openSignInModal() {
-            document.getElementById('signin-modal').classList.add('active');
-            document.getElementById('signin-error').style.display = 'none'; // Hide error on open
-            document.getElementById('signin-form').reset(); // Clear form fields
-        }
+<div class="related-books-section">
+<h3>More from this Author</h3>
+<div class="loading-message" id="author-books-loading">Loading related books...</div>
+<div class="error-message" id="author-books-error" style="display: none;">Failed to load related books.</div>
+<div class="product-grid" id="author-books-list">
+<!-- Content populated by JS from PocketBase -->
+</div>
+</div>
 
-        function openRegisterModal() {
-            document.getElementById('register-modal').classList.add('active');
-            document.getElementById('register-error').style.display = 'none'; // Hide error on open
-            document.getElementById('register-form').reset(); // Clear form fields
-        }
+<div class="related-books-section">
+<h3>You Might Also Like</h3>
+<div class="loading-message" id="similar-books-loading">Loading similar books...</div>
+<div class="error-message" id="similar-books-error" style="display: none;">Failed to load similar books.</div>
+<div class="product-grid" id="similar-books-list">
+<!-- Content populated by JS from PocketBase -->
+</div>
+</div>
+</div>
+</div>
+</section>
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
+</main>
 
-        // --- Ebook Display Functionality ---
-        async function loadEbooks() {
-            const ebooksDisplay = document.getElementById('ebooks-display');
-            ebooksDisplay.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">Loading ebooks...</p>';
+<footer>
+© <span id="year"></span> Lumee — All rights reserved
+</footer>
 
-            try {
-                // Fetch ebook records from PocketBase
-                const records = await pb.collection(EBOOK_COLLECTION_NAME).getFullList({
-                    sort: '-created', // Sort by creation date descending
-                });
+<!-- Sign In Modal - kept for visual, but no functionality -->
+<div id="signin-modal" class="modal-overlay" onclick="closeModal('signin-modal', event)">
+<div class="modal-content generic-modal-content" onclick="event.stopPropagation()">
+<button class="close-btn" onclick="closeModal('signin-modal')">&times;</button>
+<h2 id="signin-modal-title">Sign In to Lumee (Demo)</h2>
+<form>
+<input type="email" placeholder="Email (no functionality)" disabled>
+<input type="password" placeholder="Password (no functionality)" disabled>
+<button type="button" onclick="alert('Sign In is not functional in this demo.')">Sign In</button>
+</form>
+<p class="error-message">This is a demo. Sign-in functionality is removed.</p>
+</div>
+</div>
 
-                if (records.length === 0) {
-                    ebooksDisplay.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">No ebooks found yet. Add some to your PocketBase collection!</p>';
-                    return;
-                }
+<!-- Register Modal - kept for visual, but no functionality -->
+<div id="register-modal" class="modal-overlay" onclick="closeModal('register-modal', event)">
+<div class="modal-content generic-modal-content" onclick="event.stopPropagation()">
+<button class="close-btn" onclick="closeModal('register-modal')">&times;</button>
+<h2 id="register-modal-title">Join Lumee (Demo)</h2>
+<form>
+<input type="email" placeholder="Email (no functionality)" disabled>
+<input type="password" placeholder="Password (no functionality)" disabled>
+<button type="button" onclick="alert('Register is not functional in this demo.')">Register</button>
+</form>
+<p class="error-message">This is a demo. Registration functionality is removed.</p>
+</div>
+</div>
 
-                ebooksDisplay.innerHTML = ''; // Clear loading message
+<!-- Include the PocketBase JS SDK from a CDN -->
+<script src="https://cdn.jsdelivr.net/npm/pocketbase@0.20.2/dist/pocketbase.umd.min.js"></script>
+<!-- Link to your external JavaScript file -->
+<script src="script.js"></script>
 
-                records.forEach(ebook => {
-                    const ebookCard = document.createElement('div');
-                    ebookCard.className = 'ebook-card';
-
-                    const imageUrl = ebook[EBOOK_FIELD_COVER_IMAGE]
-                        ? pb.files.getUrl(ebook, ebook[EBOOK_FIELD_COVER_IMAGE], { thumb: '200x200' }) // Request a thumbnail
-                        : 'https://via.placeholder.com/150x200/cccccc/ffffff?text=No+Cover'; // Fallback if no image
-
-                    ebookCard.innerHTML = `
-                        <img src="${imageUrl}" alt="${ebook[EBOOK_FIELD_TITLE]} Cover">
-                        <h3>${ebook[EBOOK_FIELD_TITLE] || 'Untitled'}</h3>
-                        <p>by ${ebook[EBOOK_FIELD_AUTHOR] || 'Unknown Author'}</p>
-                        <p class="price">$${ebook[EBOOK_FIELD_PRICE] ? parseFloat(ebook[EBOOK_FIELD_PRICE]).toFixed(2) : 'N/A'}</p>
-                        <p class="description">${ebook[EBOOK_FIELD_DESCRIPTION] || 'No description available.'}</p>
-                        <button style="background-color: #f39c12; margin-top: 15px;">View Details</button>
-                    `;
-                    ebooksDisplay.appendChild(ebookCard);
-                });
-
-            } catch (error) {
-                console.error('Error loading ebooks:', error);
-                ebooksDisplay.innerHTML = '<p style="color: red; text-align: center; grid-column: 1 / -1;">Failed to load ebooks. Please check your PocketBase URL, collection name, and console for details.</p>';
-            }
-        }
-
-        // --- Authentication Functionality ---
-        async function handleSignIn(event) {
-            event.preventDefault();
-            const email = document.getElementById('signin-email').value;
-            const password = document.getElementById('signin-password').value;
-            const signInError = document.getElementById('signin-error');
-
-            try {
-                signInError.style.display = 'none'; // Hide previous errors
-                await pb.collection('users').authWithPassword(email, password);
-                console.log('User signed in:', pb.authStore.model);
-                closeModal('signin-modal');
-                updateAuthStatus();
-            } catch (error) {
-                console.error('Sign In failed:', error);
-                signInError.textContent = error.message || 'Invalid email or password.';
-                signInError.style.display = 'block';
-            }
-        }
-
-        async function handleRegister(event) {
-            event.preventDefault();
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-            const confirmPassword = document.getElementById('register-confirm-password').value;
-            const registerError = document.getElementById('register-error');
-
-            if (password !== confirmPassword) {
-                registerError.textContent = 'Passwords do not match.';
-                registerError.style.display = 'block';
-                return;
-            }
-
-            try {
-                registerError.style.display = 'none'; // Hide previous errors
-                const record = await pb.collection('users').create({
-                    email,
-                    password,
-                    passwordConfirm: confirmPassword,
-                });
-                console.log('User registered:', record);
-                // Optionally log in the user directly after registration
-                await pb.collection('users').authWithPassword(email, password);
-                closeModal('register-modal');
-                updateAuthStatus();
-                alert('Registration successful! You are now logged in.');
-            } catch (error) {
-                console.error('Registration failed:', error);
-                registerError.textContent = error.message || 'Registration failed. Please check your details.';
-                registerError.style.display = 'block';
-            }
-        }
-
-        function handleLogout() {
-            pb.authStore.clear(); // Clears local auth data
-            console.log('User logged out.');
-            updateAuthStatus();
-        }
-
-        function updateAuthStatus() {
-            const authStatusElement = document.getElementById('auth-status');
-            const signInBtn = document.getElementById('signin-btn');
-            const registerBtn = document.getElementById('register-btn');
-            const logoutBtn = document.getElementById('logout-btn');
-
-            if (pb.authStore.isValid && pb.authStore.model) {
-                authStatusElement.innerHTML = `Logged in as: <strong>${pb.authStore.model.email}</strong>`;
-                signInBtn.style.display = 'none';
-                registerBtn.style.display = 'none';
-                logoutBtn.style.display = 'inline-block';
-            } else {
-                authStatusElement.textContent = 'Not logged in';
-                signInBtn.style.display = 'inline-block';
-                registerBtn.style.display = 'inline-block';
-                logoutBtn.style.display = 'none';
-            }
-        }
-
-        // --- Event Listeners and Initial Load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Restore auth state from local storage if available
-            pb.authStore.loadFromCookie(document.cookie);
-
-            loadEbooks(); // Load ebooks when the page loads
-            updateAuthStatus(); // Update auth status on load
-
-            // Attach event listeners to forms and buttons
-            document.getElementById('signin-form').addEventListener('submit', handleSignIn);
-            document.getElementById('register-form').addEventListener('submit', handleRegister);
-            document.getElementById('logout-btn').addEventListener('click', handleLogout);
-        });
-
-        // Close modals if user clicks outside
-        window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal')) {
-                event.target.classList.remove('active');
-            }
-        });
-    </script>
 </body>
 </html>
