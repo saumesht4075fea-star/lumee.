@@ -1,925 +1,298 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lumee — Premium Ebook Store</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-<!-- Include the PocketBase JS SDK from a CDN -->
-<script src="https://cdn.jsdelivr.net/npm/pocketbase@0.20.2/dist/pocketbase.umd.min.js"></script>
-<style>
-/* --- Global Variables and Base Styles --- */
-:root{
---bg:#0f1115;
---card:#171a21;
---accent:#d4b15a;
---text:#e9eaf0;
---muted:#a3a7b2;
---text-dark:#111; /* Used for text on accent background */
---error-red: #ff6666; /* For error messages */
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-background:var(--bg);
-color:var(--text);
-line-height:1.5;
-min-height:100vh;
-display:flex;
-flex-direction:column;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumee Ebook Store</title>
+    <!--
+        *** IMPORTANT: Include the PocketBase JS client library ***
+        Download pocketbase.umd.js from https://github.com/pocketbase/pocketbase/releases/latest/download/pocketbase.umd.js
+        Place it in a 'lib' folder in your project's root: your_project/lib/pocketbase.umd.js
+        Then uncomment the line below:
+    -->
+    <script src="./lib/pocketbase.umd.js"></script>
 
-/* --- Header and Navigation --- */
-header{
-position:sticky;top:0;z-index:10;
-backdrop-filter:saturate(180%) blur(10px);
-background:rgba(15,17,21,0.85);
-border-bottom:1px solid #222630;
-}
-.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
-.nav{
-display:flex;align-items:center;justify-content:space-between;
-height:64px;
-}
-.brand{
-font-family:"Playfair Display",serif;
-font-size:1.4rem;letter-spacing:.5px;color:var(--accent);
-text-decoration:none;
-cursor:pointer;
-}
-.nav a,.nav button { /* Apply styles to buttons too */
-color:var(--text);text-decoration:none;margin-left:24px;font-weight:600;
-cursor:pointer;
-transition:color.2s ease;
-background:none; /* For buttons */
-border:none; /* For buttons */
-font-size:1rem; /* For buttons */
-padding:0; /* For buttons */
-}
-.nav a:hover,.nav button:hover{color:var(--accent)}
+    <style>
+        /* Basic Styling - We can make this "premium" later! */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px 30px; background-color: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        header { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        h1 { color: #2c3e50; font-size: 2.8em; margin-bottom: 10px; }
+        h1 span { color: #3498db; } /* Accent color for a part of the title */
+        header p { color: #7f8c8d; font-size: 1.1em; }
 
-/* --- User Profile Dropdown Styles (kept for visual consistency, but no user logic) --- */
-.user-profile-dropdown {
-position: relative;
-display: inline-block;
-margin-left: 24px;
-}
-.user-profile-dropdown.dropdown-toggle { /* Specificity for the button within the div */
-background: none;
-border: none;
-color: var(--text);
-font-weight: 600;
-font-size: 1rem;
-padding: 0;
-cursor: pointer;
-transition: color.2s ease;
-}
-.user-profile-dropdown.dropdown-toggle:hover {
-color: var(--accent);
-}
-.user-profile-dropdown.dropdown-menu {
-display: none;
-position: absolute;
-background-color: var(--card);
-min-width: 120px;
-box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
-z-index: 1;
-border-radius: 8px;
-overflow: hidden;
-right: 0; /* Align to the right */
-margin-top: 8px;
-border: 1px solid #232734;
-}
-.user-profile-dropdown.dropdown-menu a {
-color: var(--text);
-padding: 12px 16px;
-text-decoration: none;
-display: block;
-text-align: left;
-font-weight: 400;
-margin-left: 0;
-}
-.user-profile-dropdown.dropdown-menu a:hover {
-background-color: #2e3549;
-color: var(--accent);
-}
-/* Show dropdown on hover/focus */
-.user-profile-dropdown:hover.dropdown-menu,
-.user-profile-dropdown.dropdown-toggle:focus +.dropdown-menu {
-display: block;
-}
+        nav { text-align: right; margin-bottom: 20px; display: flex; justify-content: flex-end; align-items: center; gap: 15px; }
+        nav .auth-info { font-size: 0.9em; color: #555; }
+        nav button { background-color: #3498db; color: white; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; transition: background-color 0.3s ease; }
+        nav button:hover { background-color: #2980b9; }
+        nav button.logout-btn { background-color: #e74c3c; }
+        nav button.logout-btn:hover { background-color: #c0392b; }
 
-/* --- Hero Section --- */
-.hero{
-padding:80px 0 60px;
-background:
-radial-gradient(1200px 500px at 80% -10%, #d4b15a22, transparent 60%),
-radial-gradient(900px 400px at 10% 10%, #7aa2ff22, transparent 60%);
-text-align:center;
-}
-.hero h1{
-font-family:"Playfair Display",serif;
-font-size:2.8rem;margin-bottom:12px;
-}
-.hero p{color:var(--muted);max-width:640px;margin:0 auto}
-.btn{
-display:inline-block;margin-top:22px;
-padding:12px 22px;border-radius:10px;
-background:var(--accent);color:var(--text-dark);font-weight:700;text-decoration:none;cursor:pointer;
-transition:background.2s ease;
-}
-.btn:hover{background:#e3c66d}
+        .ebooks-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 30px; }
+        .ebook-card { background-color: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; overflow: hidden; }
+        .ebook-card:hover { transform: translateY(-5px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+        .ebook-card img { max-width: 100%; height: 200px; object-fit: contain; border-radius: 8px; margin-bottom: 15px; display: block; margin-left: auto; margin-right: auto; }
+        .ebook-card h3 { margin-top: 0; color: #2c3e50; font-size: 1.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ebook-card p { font-size: 0.95em; color: #555; margin-bottom: 8px; }
+        .ebook-card .price { font-weight: bold; color: #27ae60; font-size: 1.2em; margin-bottom: 15px; }
+        .ebook-card .description { font-size: 0.85em; color: #777; height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 
-/* --- Section Titles and Layout --- */
-.section-title{
-font-family:"Playfair Display",serif;font-size:2rem;margin-bottom:24px;text-align:center;
-}
-.page-section {
-display: none;
-padding: 60px 0;
-flex-grow: 1;
-}
-.page-section.active {
-display: block;
-}
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; transition: opacity 0.3s ease; opacity: 0; }
+        .modal.active { display: flex; opacity: 1; }
+        .modal-content { background-color: #fff; padding: 35px; border-radius: 10px; max-width: 450px; width: 90%; box-shadow: 0 5px 25px rgba(0,0,0,0.2); position: relative; animation: modalFadeIn 0.3s ease-out; }
+        @keyframes modalFadeIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-/* --- Product Grid and Cards --- */
-.product-grid{
-display:grid;gap:24px;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-margin-top:40px;
-}
-.card{
-background:#101218;border:1px solid #232734;border-radius:16px;
-overflow:hidden;cursor:pointer;
-transition:transform.2s ease, border-color.2s ease;
-}
-.card:hover{transform:translateY(-4px);border-color:#333845}
-.card img{
-width:100%;height:280px;object-fit:cover;background:#101218;
-}
-.card-body{padding:14px}
-.card h3{font-size:1.1rem;margin-bottom:6px}
-.card .author{color:var(--muted);font-size:.9rem}
-.card .price{margin-top:10px;font-weight:700} /* Added for card price */
-
-/* --- Search Input --- */
-.search-input-container {
-text-align: center;
-margin-bottom: 30px;
-}
-.search-input-container input {
-width: 100%;
-max-width: 400px;
-padding: 12px 15px;
-border-radius: 8px;
-border: 1px solid #333845;
-background: #171a21;
-color: var(--text);
-font-size: 1rem;
-outline: none;
-}
-.search-input-container input::placeholder {
-color: var(--muted);
-}
-
-/* --- Footer --- */
-footer{
-margin-top:auto;
-border-top:1px solid #222630;
-color:var(--muted);padding:30px 0;text-align:center;
-}
-
-/* --- Modal Base Styles (for all auth modals - now just generic modals) --- */
-.modal-overlay{
-position:fixed;inset:0;background:rgba(0,0,0,.8);
-display:none;align-items:center;justify-content:center;
-z-index:100;opacity:0;transition:opacity.3s ease;
-}
-.modal-overlay.active{display:flex;opacity:1}
-.modal-content{
-background:var(--card);
-border:1px solid #232734;
-border-radius:16px;
-width:90%;max-height:85vh;
-overflow:auto;padding:24px;position:relative;
-transform:scale(.95);opacity:0;transition:transform.3s ease, opacity.3s ease;
-display: flex; /* Always flex inside, visible/hidden by parent active class */
-flex-direction: column;
-}
-.modal-overlay.active >.modal-content {
-transform: scale(1);
-opacity: 1;
-}
-
-.close-btn{
-position:absolute;top:16px;right:16px;
-background:none;border:none;color:var(--text);font-size:1.4rem;cursor:pointer;
-z-index:10;
-}
-
-/* --- Auth Modal Specific Styles (renamed to generic for consistent styling) --- */
-.generic-modal-content { /* Applied to all modal contents that previously had auth styling */
-max-width: 400px;
-text-align: center;
-padding: 30px;
-background: var(--card);
-border: 1px solid #232734;
-box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-}
-.generic-modal-content h2 {
-font-family:"Playfair Display",serif;
-margin-bottom: 25px;
-color: var(--text);
-font-size: 2rem;
-}
-.generic-modal-content form {
-display: flex;
-flex-direction: column;
-gap: 15px;
-}
-.generic-modal-content input {
-padding: 12px;
-border-radius: 8px;
-border: 1px solid #333845;
-background: #171a21;
-color: var(--text);
-font-size: 1rem;
-box-sizing: border-box;
-width: 100%;
-}
-.generic-modal-content input::placeholder {
-color: var(--muted);
-}
-.generic-modal-content button[type="submit"] {
-background: var(--accent);
-color: var(--text-dark);
-font-weight: 700;
-padding: 14px 22px;
-border-radius: 10px;
-border: none;
-cursor: pointer;
-transition: background.2s ease;
-font-size: 1.1rem;
-width: 100%;
-margin-top: 10px;
-}
-.generic-modal-content button[type="submit"]:hover {
-background: #e3c66d;
-}
-.generic-modal-content p {
-font-size: 0.95rem;
-color: var(--muted);
-margin-top: 15px;
-}
-.generic-modal-content p a {
-color: var(--accent);
-text-decoration: none;
-font-weight: 600;
-transition: color.2s ease;
-}
-.generic-modal-content p a:hover {
-color: #e3c66d;
-}
-.generic-modal-content .error-message { /* Renamed for general errors */
-color: var(--error-red);
-margin-top: 15px;
-font-size: 0.9rem;
-display: none;
-}
-
-/* Admin Panel Specific Styles (will be removed from HTML, but CSS kept if needed for other forms) */
-#admin-panel-container {
-display: none; /* Always hidden now */
-background: var(--card);
-border: 1px solid #232734;
-border-radius: 16px;
-padding: 30px;
-margin-top: 40px;
-max-width: 800px;
-margin-left: auto;
-margin-right: auto;
-}
-#admin-panel-container h2 {
-text-align: center;
-margin-bottom: 30px;
-font-family: "Playfair Display", serif;
-font-size: 2.2rem;
-color: var(--accent);
-}
-/* Form styles within admin panel also apply to other forms now, if any */
-#add-ebook-form-admin label {
-display: block;
-margin-bottom: 8px;
-font-weight: 600;
-color: var(--text);
-}
-#add-ebook-form-admin input[type="text"],
-#add-ebook-form-admin input[type="number"],
-#add-ebook-form-admin textarea {
-width: 100%;
-padding: 12px;
-margin-bottom: 20px;
-border-radius: 8px;
-border: 1px solid #333845;
-background: #101218;
-color: var(--text);
-font-size: 1rem;
-outline: none;
-}
-#add-ebook-form-admin input[type="text"]::placeholder,
-#add-ebook-form-admin textarea::placeholder {
-color: var(--muted);
-}
-#add-ebook-form-admin textarea {
-resize: vertical;
-min-height: 80px;
-}
-#add-ebook-form-admin button {
-display: block;
-width: 100%;
-padding: 14px 22px;
-border-radius: 10px;
-background: var(--accent);
-color: var(--text-dark);
-font-weight: 700;
-text-decoration: none;
-cursor: pointer;
-transition: background.2s ease;
-font-size: 1.1rem;
-border: none;
-margin-top: 20px;
-}
-#add-ebook-form-admin button:hover {
-background: #e3c66d;
-}
-#admin-message {
-margin-top: 20px;
-text-align: center;
-font-weight: 600;
-font-size: 1.1rem;
-}
-#admin-message.success {
-color: #66bb6a;
-}
-#admin-message.error {
-color: var(--error-red);
-}
-
-/* Ebook Detail Page Styles */
-#ebook-detail-content {
-display: flex;
-flex-direction: column;
-gap: 40px;
-padding-top: 20px; /* Space for back button */
-}
-#ebook-detail-main {
-display: flex;
-flex-direction: column;
-gap: 30px;
-}
-#ebook-detail-cover-img {
-width: 100%;
-max-width: 300px;
-height: auto;
-object-fit: contain;
-background: #101218;
-border-radius: 8px;
-align-self: center;
-}
-#ebook-detail-info {
-text-align: center;
-}
-#ebook-detail-info h2 {
-font-family: "Playfair Display", serif;
-font-size: 2.5rem;
-margin-bottom: 10px;
-color: var(--accent);
-}
-#ebook-detail-info .author { /* Corrected selector */
-color: var(--muted);
-font-size: 1.2rem;
-margin-bottom: 15px;
-}
-#ebook-detail-info .price { /* Corrected selector */
-font-size: 2rem;
-font-weight: 700;
-margin-bottom: 25px;
-}
-#ebook-detail-info p {
-color: var(--muted);
-line-height: 1.8;
-margin-bottom: 30px;
-}
-.detail-buy-btn {
-width: 100%;
-max-width: 300px;
-align-self: center;
-font-size: 1.2rem;
-padding: 15px 0;
-}
-@media (min-width: 768px) {
-#ebook-detail-main {
-flex-direction: row;
-align-items: flex-start;
-text-align: left;
-}
-#ebook-detail-cover-img {
-width: 35%;
-max-width: 350px;
-}
-#ebook-detail-info {
-width: 65%;
-padding-left: 40px;
-text-align: left;
-}
-.detail-buy-btn {
-width: auto;
-align-self: flex-start;
-}
-}
-.related-books-section {
-margin-top: 50px;
-border-top: 1px solid #232734;
-padding-top: 50px;
-}
-.related-books-section h3 {
-font-family: "Playfair Display", serif;
-font-size: 1.8rem;
-margin-bottom: 20px;
-text-align: center;
-}
-.back-button-container {
-padding-bottom: 20px;
-}
-.back-button {
-background: none;
-border: 1px solid var(--muted);
-color: var(--muted);
-padding: 8px 15px;
-border-radius: 8px;
-cursor: pointer;
-font-size: 0.9rem;
-transition: all 0.2s ease;
-}
-.back-button:hover {
-color: var(--accent);
-border-color: var(--accent);
-}
-/* New loading/error messages for PocketBase data */
-.loading-message, .error-message {
-text-align: center;
-font-size: 1.1em;
-color: var(--muted);
-margin-top: 20px;
-}
-.error-message {
-color: var(--error-red);
-}
-</style>
+        .close-button { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #777; transition: color 0.3s ease; }
+        .close-button:hover { color: #333; }
+        .modal-content h2 { text-align: center; color: #34495e; margin-bottom: 25px; font-size: 1.8em; }
+        form div { margin-bottom: 20px; }
+        form label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+        form input[type="text"], form input[type="password"], form input[type="email"] { width: calc(100% - 24px); padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
+        form input[type="text"]:focus, form input[type="password"]:focus, form input[type="email"]:focus { border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); outline: none; }
+        form button { background-color: #2ecc71; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1.1em; width: 100%; transition: background-color 0.3s ease; margin-top: 10px; }
+        form button:hover { background-color: #27ae60; }
+        .error-message { color: #e74c3c; margin-top: 15px; text-align: center; font-size: 0.9em; display: none; }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <nav>
+                <div id="auth-status" class="auth-info">Not logged in</div>
+                <button id="signin-btn" onclick="openSignInModal()">Sign In</button>
+                <button id="register-btn" onclick="openRegisterModal()">Register</button>
+                <button id="logout-btn" class="logout-btn" style="display: none;">Logout</button>
+            </nav>
+            <h1>Lumee <span>Ebook Store</span></h1>
+            <p>Discover captivating stories and knowledge at your fingertips.</p>
+        </header>
 
-<header>
-<div class="wrap nav">
-<a class="brand" onclick="showSection('home')">Lumee</a>
-<nav>
-<a onclick="showSection('books')">Books</a>
-<a onclick="showSection('about')">About</a>
-<!-- Removed Admin link as it relied on Firebase auth -->
-<span id="authControls">
-<!-- Dummy auth controls, no functionality -->
-<button onclick="alert('Sign In functionality removed!')">Sign In</button>
-<button onclick="alert('Register functionality removed!')">Register</button>
-</span>
-</nav>
-</div>
-</header>
+        <main>
+            <h2 style="text-align: center; color: #34495e; margin-bottom: 25px;">Our Collection</h2>
+            <div id="ebooks-display" class="ebooks-grid">
+                <!-- Ebook cards will be dynamically loaded here by JavaScript -->
+                <p style="text-align: center; grid-column: 1 / -1;">Loading ebooks...</p>
+            </div>
+        </main>
+    </div>
 
-<main style="display:flex; flex-direction:column; flex-grow:1;">
-
-<!-- HOME Section -->
-<section id="home" class="page-section active">
-<div class="hero">
-<div class="wrap">
-<h1>Read better. Think deeper.</h1>
-<p>Curated ebooks on design, business, and technology. Instant download, lifetime access.</p>
-<button class="btn" onclick="showSection('books')">Explore All Ebooks</button>
-</div>
-</div>
-<div class="wrap">
-<h2 class="section-title">Featured Ebooks</h2>
-<div class="loading-message" id="homepage-loading">Loading featured ebooks...</div>
-<div class="error-message" id="homepage-error" style="display: none;">Failed to load featured ebooks.</div>
-<div class="product-grid" id="homepage-ebook-list">
-<!-- Content populated by JS from PocketBase -->
-</div>
-</div>
-</section>
-
-<!-- BOOKS Section -->
-<section id="books" class="page-section">
-<div class="wrap">
-<h2 class="section-title">Our Full Collection</h2>
-<div class="search-input-container">
-<input type="text" id="searchInput" onkeyup="filterBooks()" placeholder="Search by title or author...">
-</div>
-<div class="loading-message" id="allbooks-loading">Loading all ebooks...</div>
-<div class="error-message" id="allbooks-error" style="display: none;">Failed to load all ebooks.</div>
-<div class="product-grid" id="all-books-list">
-<!-- Content populated by JS from PocketBase -->
-</div>
-</div>
-</section>
-
-<!-- ABOUT Section -->
-<section id="about" class="page-section">
-<div class="wrap" style="text-align:center;">
-<h2 class="section-title">About Lumee</h2>
-<p style="color:var(--muted);line-height:1.7;max-width:760px;margin:0 auto;">
-Lumee is a minimalist ebook store dedicated to providing high-quality digital books
-for curious minds. We believe in knowledge that empowers and inspires,
-curating titles across design, business, and technology.
-Every purchase grants you instant access and lifetime ownership of your digital reads.
-Our mission is to make insightful literature accessible and enjoyable for everyone.
-<br><br>
-Reach out to us at <a href="mailto:info@lumee.com" style="color:var(--accent);text-decoration:none;">info@lumee.com</a>
-for inquiries or collaborations.
-</p>
-</div>
-</section>
-
-<!-- Admin Section - REMOVED as it relied on Firebase auth and data management -->
-<!-- <section id="admin" class="page-section">
-    <div class="wrap">
-        <div id="admin-panel-container">
-            <h2>Admin Panel</h2>
-            <form id="add-ebook-form-admin">
-                ...
+    <!-- Sign In Modal -->
+    <div id="signin-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('signin-modal')">&times;</span>
+            <h2>Sign In</h2>
+            <form id="signin-form">
+                <div>
+                    <label for="signin-email">Email:</label>
+                    <input type="email" id="signin-email" required>
+                </div>
+                <div>
+                    <label for="signin-password">Password:</label>
+                    <input type="password" id="signin-password" required>
+                </div>
+                <button type="submit">Sign In</button>
+                <p class="error-message" id="signin-error"></p>
             </form>
-            <p id="admin-message"></p>
         </div>
     </div>
-</section> -->
 
-<!-- Ebook Detail Page Section -->
-<section id="ebook-detail" class="page-section">
-<div class="wrap">
-<div class="back-button-container">
-<button class="back-button" onclick="goBackToPreviousSection()"> &larr; Back to Books</button>
-</div>
-<div id="ebook-detail-content">
-<div id="ebook-detail-main">
-<img id="ebook-detail-cover-img" src="" alt="Book cover">
-<div id="ebook-detail-info">
-<h2 id="ebook-detail-title"></h2>
-<div class="author" id="ebook-detail-author"></div>
-<div class="price" id="ebook-detail-price"></div>
-<p id="ebook-detail-description"></p>
-<a id="ebook-detail-buy-btn" class="btn detail-buy-btn" target="_blank" rel="noopener noreferrer">Buy / Download Ebook</a>
-</div>
-</div>
+    <!-- Register Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('register-modal')">&times;</span>
+            <h2>Register</h2>
+            <form id="register-form">
+                <div>
+                    <label for="register-email">Email:</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div>
+                    <label for="register-password">Password:</label>
+                    <input type="password" id="register-password" required>
+                </div>
+                <div>
+                    <label for="register-confirm-password">Confirm Password:</label>
+                    <input type="password" id="register-confirm-password" required>
+                </div>
+                <button type="submit">Register</button>
+                <p class="error-message" id="register-error"></p>
+            </form>
+        </div>
+    </div>
 
-<div class="related-books-section">
-<h3>More from this Author</h3>
-<div class="loading-message" id="author-books-loading">Loading related books...</div>
-<div class="error-message" id="author-books-error" style="display: none;">Failed to load related books.</div>
-<div class="product-grid" id="author-books-list">
-<!-- Content populated by JS from PocketBase -->
-</div>
-</div>
+    <script>
+        // --- Configuration: IMPORTANT! Replace with your actual Render backend URL and collection name ---
+        const PB_URL = 'YOUR_POCKETBASE_BACKEND_URL_HERE'; // e.g., 'https://lumee-pocketbase-backend.onrender.com'
+        const EBOOK_COLLECTION_NAME = 'YOUR_EBOOK_COLLECTION_NAME_HERE'; // e.g., 'ebooks' or 'products'
 
-<div class="related-books-section">
-<h3>You Might Also Like</h3>
-<div class="loading-message" id="similar-books-loading">Loading similar books...</div>
-<div class="error-message" id="similar-books-error" style="display: none;">Failed to load similar books.</div>
-<div class="product-grid" id="similar-books-list">
-<!-- Content populated by JS from PocketBase -->
-</div>
-</div>
-</div>
-</div>
-</section>
+        // --- Ebook Collection Field Names (Match these to your PocketBase fields) ---
+        const EBOOK_FIELD_TITLE = 'title';     // e.g., 'name' or 'bookTitle'
+        const EBOOK_FIELD_AUTHOR = 'author';   // e.g., 'writer'
+        const EBOOK_FIELD_PRICE = 'price';     // e.g., 'cost'
+        const EBOOK_FIELD_DESCRIPTION = 'description'; // e.g., 'details'
+        const EBOOK_FIELD_COVER_IMAGE = 'cover_image'; // e.g., 'thumbnail' or 'image'
 
-</main>
+        // Initialize PocketBase client
+        const pb = new PocketBase(PB_URL);
 
-<footer>
-© <span id="year"></span> Lumee — All rights reserved
-</footer>
+        // --- UI Modal Functions ---
+        function openSignInModal() {
+            document.getElementById('signin-modal').classList.add('active');
+            document.getElementById('signin-error').style.display = 'none'; // Hide error on open
+            document.getElementById('signin-form').reset(); // Clear form fields
+        }
 
-<!-- Sign In Modal - kept for visual, but no functionality -->
-<div id="signin-modal" class="modal-overlay" onclick="closeModal('signin-modal', event)">
-<div class="modal-content generic-modal-content" onclick="event.stopPropagation()">
-<button class="close-btn" onclick="closeModal('signin-modal')">&times;</button>
-<h2 id="signin-modal-title">Sign In to Lumee (Demo)</h2>
-<form>
-<input type="email" placeholder="Email (no functionality)" disabled>
-<input type="password" placeholder="Password (no functionality)" disabled>
-<button type="button" onclick="alert('Sign In is not functional in this demo.')">Sign In</button>
-</form>
-<p class="error-message">This is a demo. Sign-in functionality is removed.</p>
-</div>
-</div>
+        function openRegisterModal() {
+            document.getElementById('register-modal').classList.add('active');
+            document.getElementById('register-error').style.display = 'none'; // Hide error on open
+            document.getElementById('register-form').reset(); // Clear form fields
+        }
 
-<!-- Register Modal - kept for visual, but no functionality -->
-<div id="register-modal" class="modal-overlay" onclick="closeModal('register-modal', event)">
-<div class="modal-content generic-modal-content" onclick="event.stopPropagation()">
-<button class="close-btn" onclick="closeModal('register-modal')">&times;</button>
-<h2 id="register-modal-title">Join Lumee (Demo)</h2>
-<form>
-<input type="email" placeholder="Email (no functionality)" disabled>
-<input type="password" placeholder="Password (no functionality)" disabled>
-<button type="button" onclick="alert('Register is not functional in this demo.')">Register</button>
-</form>
-<p class="error-message">This is a demo. Registration functionality is removed.</p>
-</div>
-</div>
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
 
-<script>
-document.getElementById('year').textContent = new Date().getFullYear();
+        // --- Ebook Display Functionality ---
+        async function loadEbooks() {
+            const ebooksDisplay = document.getElementById('ebooks-display');
+            ebooksDisplay.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">Loading ebooks...</p>';
 
-// PocketBase Configuration
-const PB_URL = 'https://lumee-pocketbase-backend.onrender.com';
-const COLLECTION_NAME = 'posts';
-const pb = new PocketBase(PB_URL);
+            try {
+                // Fetch ebook records from PocketBase
+                const records = await pb.collection(EBOOK_COLLECTION_NAME).getFullList({
+                    sort: '-created', // Sort by creation date descending
+                });
 
-let loadedEbooks = []; // This array will now hold data fetched from PocketBase
-let currentActiveSection = 'home'; // Track the currently active section
+                if (records.length === 0) {
+                    ebooksDisplay.innerHTML = '<p style="text-align: center; grid-column: 1 / -1;">No ebooks found yet. Add some to your PocketBase collection!</p>';
+                    return;
+                }
 
-// Function to save and restore active section
-function saveActiveSection(sectionId) {
-localStorage.setItem('activeSection', sectionId);
-currentActiveSection = sectionId;
-}
+                ebooksDisplay.innerHTML = ''; // Clear loading message
 
-function restoreActiveSection() {
-const savedSection = localStorage.getItem('activeSection');
-if (savedSection && document.getElementById(savedSection)) {
-showSection(savedSection);
-} else {
-showSection('home');
-}
-}
+                records.forEach(ebook => {
+                    const ebookCard = document.createElement('div');
+                    ebookCard.className = 'ebook-card';
 
-// Function to generate a product card HTML
-function createProductCard(bookRecord) {
-// Access fields using record.fieldName (PocketBase usually lowercases them)
-const id = bookRecord.id;
-const title = bookRecord.Title || bookRecord.title || 'No Title';
-const author = bookRecord.Author || bookRecord.author || 'Unknown Author';
-const price = bookRecord.Price || bookRecord.price; // Will be number
-const coverimage = bookRecord.coverimage; // Will be filename
+                    const imageUrl = ebook[EBOOK_FIELD_COVER_IMAGE]
+                        ? pb.files.getUrl(ebook, ebook[EBOOK_FIELD_COVER_IMAGE], { thumb: '200x200' }) // Request a thumbnail
+                        : 'https://via.placeholder.com/150x200/cccccc/ffffff?text=No+Cover'; // Fallback if no image
 
-let imageUrl = '';
-if (coverimage) {
-// Construct URL for cover image: [PB_URL]/api/files/[collection_name]/[record_id]/[filename]
-imageUrl = `${PB_URL}/api/files/${COLLECTION_NAME}/${id}/${coverimage}`;
-} else {
-// Placeholder image if no cover is found
-imageUrl = 'https://via.placeholder.com/280x280?text=No+Cover';
-}
+                    ebookCard.innerHTML = `
+                        <img src="${imageUrl}" alt="${ebook[EBOOK_FIELD_TITLE]} Cover">
+                        <h3>${ebook[EBOOK_FIELD_TITLE] || 'Untitled'}</h3>
+                        <p>by ${ebook[EBOOK_FIELD_AUTHOR] || 'Unknown Author'}</p>
+                        <p class="price">$${ebook[EBOOK_FIELD_PRICE] ? parseFloat(ebook[EBOOK_FIELD_PRICE]).toFixed(2) : 'N/A'}</p>
+                        <p class="description">${ebook[EBOOK_FIELD_DESCRIPTION] || 'No description available.'}</p>
+                        <button style="background-color: #f39c12; margin-top: 15px;">View Details</button>
+                    `;
+                    ebooksDisplay.appendChild(ebookCard);
+                });
 
-return `
-<article class="card" onclick="showEbookDetail('${id}')">
-<img src="${imageUrl}" alt="${title} cover">
-<div class="card-body">
-<h3>${title}</h3>
-<div class="author">by ${author}</div>
-<div class="price">₹${price ? price.toFixed(2) : 'N/A'}</div>
-</div>
-</article>`;
-}
+            } catch (error) {
+                console.error('Error loading ebooks:', error);
+                ebooksDisplay.innerHTML = '<p style="color: red; text-align: center; grid-column: 1 / -1;">Failed to load ebooks. Please check your PocketBase URL, collection name, and console for details.</p>';
+            }
+        }
 
-// Function to load products into a given list element
-function loadProducts(elementId, booksToLoad) {
-const productList = document.getElementById(elementId);
-if (productList) {
-productList.innerHTML = booksToLoad.map(record => createProductCard(record)).join('');
-if (booksToLoad.length === 0) {
-productList.innerHTML = '<p style="text-align:center;color:var(--muted);">No ebooks found.</p>';
-}
-}
-}
+        // --- Authentication Functionality ---
+        async function handleSignIn(event) {
+            event.preventDefault();
+            const email = document.getElementById('signin-email').value;
+            const password = document.getElementById('signin-password').value;
+            const signInError = document.getElementById('signin-error');
 
-// Show specific section and hide others, plus save state
-const originalShowSection = function(sectionId) {
-document.querySelectorAll('.page-section').forEach(section => {
-section.classList.remove('active');
-});
-const targetSection = document.getElementById(sectionId);
-if (targetSection) {
-targetSection.classList.add('active');
-saveActiveSection(sectionId); // Save the active section
-}
+            try {
+                signInError.style.display = 'none'; // Hide previous errors
+                await pb.collection('users').authWithPassword(email, password);
+                console.log('User signed in:', pb.authStore.model);
+                closeModal('signin-modal');
+                updateAuthStatus();
+            } catch (error) {
+                console.error('Sign In failed:', error);
+                signInError.textContent = error.message || 'Invalid email or password.';
+                signInError.style.display = 'block';
+            }
+        }
 
-// close all modals when switching sections
-closeModal('signin-modal');
-closeModal('register-modal');
+        async function handleRegister(event) {
+            event.preventDefault();
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            const registerError = document.getElementById('register-error');
 
-// Re-load ebooks if navigating to relevant sections
-if (sectionId === 'books' || sectionId === 'home') {
-// Since data is now fetched, ensure it's loaded and filtered
-if (loadedEbooks.length === 0) { // Only fetch if not already loaded
-fetchAndDisplayPosts();
-} else { // Otherwise just re-render with existing data
-renderEbooks();
-}
-const searchInput = document.getElementById('searchInput');
-if (searchInput) {
-searchInput.value = ''; // Clear search on section switch
-filterBooks(); // Apply filter after loading (clearing search essentially shows all)
-}
-}
-};
+            if (password !== confirmPassword) {
+                registerError.textContent = 'Passwords do not match.';
+                registerError.style.display = 'block';
+                return;
+            }
 
-// Global showSection variable, allowing it to be overridden for back button logic
-window.showSection = function(sectionId) {
-if (currentActiveSection !== sectionId) { // Only update if actually changing sections
-window.previousSectionId = currentActiveSection; // Use window to make it truly global
-}
-originalShowSection(sectionId);
-};
+            try {
+                registerError.style.display = 'none'; // Hide previous errors
+                const record = await pb.collection('users').create({
+                    email,
+                    password,
+                    passwordConfirm: confirmPassword,
+                });
+                console.log('User registered:', record);
+                // Optionally log in the user directly after registration
+                await pb.collection('users').authWithPassword(email, password);
+                closeModal('register-modal');
+                updateAuthStatus();
+                alert('Registration successful! You are now logged in.');
+            } catch (error) {
+                console.error('Registration failed:', error);
+                registerError.textContent = error.message || 'Registration failed. Please check your details.';
+                registerError.style.display = 'block';
+            }
+        }
 
-// Function to navigate to ebook detail page
-function showEbookDetail(ebookId) {
-const ebook = loadedEbooks.find(b => b.id === ebookId);
-if (!ebook) {
-console.error("Ebook not found:", ebookId);
-showSection('books'); // Fallback to books section
-return;
-}
+        function handleLogout() {
+            pb.authStore.clear(); // Clears local auth data
+            console.log('User logged out.');
+            updateAuthStatus();
+        }
 
-// Access fields using record.fieldName (PocketBase usually lowercases them)
-const title = ebook.Title || ebook.title || 'No Title';
-const author = ebook.Author || ebook.author || 'Unknown Author';
-const price = ebook.Price || ebook.price;
-const coverimage = ebook.coverimage;
-const downloadurl = ebook.downloadurl;
-const description = ebook.description;
+        function updateAuthStatus() {
+            const authStatusElement = document.getElementById('auth-status');
+            const signInBtn = document.getElementById('signin-btn');
+            const registerBtn = document.getElementById('register-btn');
+            const logoutBtn = document.getElementById('logout-btn');
 
-let imageUrl = '';
-if (coverimage) {
-imageUrl = `${PB_URL}/api/files/${COLLECTION_NAME}/${ebook.id}/${coverimage}`;
-} else {
-imageUrl = 'https://via.placeholder.com/280x280?text=No+Cover';
-}
+            if (pb.authStore.isValid && pb.authStore.model) {
+                authStatusElement.innerHTML = `Logged in as: <strong>${pb.authStore.model.email}</strong>`;
+                signInBtn.style.display = 'none';
+                registerBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-block';
+            } else {
+                authStatusElement.textContent = 'Not logged in';
+                signInBtn.style.display = 'inline-block';
+                registerBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+            }
+        }
 
-document.getElementById('ebook-detail-cover-img').src = imageUrl;
-document.getElementById('ebook-detail-cover-img').alt = `${title} cover`;
-document.getElementById('ebook-detail-title').textContent = title;
-document.getElementById('ebook-detail-author').textContent = `by ${author}`;
-document.getElementById('ebook-detail-price').textContent = `₹${price ? price.toFixed(2) : 'N/A'}`;
-document.getElementById('ebook-detail-description').textContent = description || 'No description available.';
+        // --- Event Listeners and Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Restore auth state from local storage if available
+            pb.authStore.loadFromCookie(document.cookie);
 
-const buyButton = document.getElementById('ebook-detail-buy-btn');
-if (downloadurl) {
-buyButton.href = downloadurl;
-buyButton.style.display = 'inline-block';
-} else {
-buyButton.removeAttribute('href');
-buyButton.style.display = 'none';
-}
+            loadEbooks(); // Load ebooks when the page loads
+            updateAuthStatus(); // Update auth status on load
 
-// Load related books
-loadAuthorBooks(author, ebookId);
-loadSimilarBooks(ebookId);
+            // Attach event listeners to forms and buttons
+            document.getElementById('signin-form').addEventListener('submit', handleSignIn);
+            document.getElementById('register-form').addEventListener('submit', handleRegister);
+            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+        });
 
-showSection('ebook-detail');
-}
-
-// Go back functionality
-window.previousSectionId = 'home'; // Default previous section
-
-function goBackToPreviousSection() {
-showSection(window.previousSectionId);
-}
-
-// Close Modal
-function closeModal(modalId, event = null){
-const modalElement = document.getElementById(modalId);
-if (!modalElement) return;
-
-if (event) {
-const clickedElement = event.target;
-// Check if clicked element is the modal overlay itself or a close button
-if (clickedElement === modalElement || clickedElement.closest('.close-btn')) {
-modalElement.classList.remove('active');
-}
-} else {
-modalElement.classList.remove('active');
-}
-}
-
-// Function to filter books based on search input
-function filterBooks() {
-const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-const filteredEbooks = loadedEbooks.filter(ebook =>
-(ebook.Title || ebook.title || '').toLowerCase().includes(searchTerm) ||
-(ebook.Author || ebook.author || '').toLowerCase().includes(searchTerm)
-);
-loadProducts('all-books-list', filteredEbooks);
-}
-
-// Load books by the same author
-function loadAuthorBooks(author, currentEbookId) {
-const authorBooks = loadedEbooks.filter(ebook =>
-(ebook.Author || ebook.author) === author && ebook.id !== currentEbookId
-);
-// Hide loading/error for this section before loading
-document.getElementById('author-books-loading').style.display = 'none';
-document.getElementById('author-books-error').style.display = 'none';
-loadProducts('author-books-list', authorBooks);
-}
-
-// Load similar books (from fetched data)
-function loadSimilarBooks(currentEbookId) {
-// Get a few random books that are not the current one or by the same author
-const similarBooks = loadedEbooks.filter(ebook => ebook.id !== currentEbookId)
-.sort(() => 0.5 - Math.random()) // Randomize order
-.slice(0, 3); // Take top 3
-// Hide loading/error for this section before loading
-document.getElementById('similar-books-loading').style.display = 'none';
-document.getElementById('similar-books-error').style.display = 'none';
-loadProducts('similar-books-list', similarBooks);
-}
-
-// Function to render ebooks to both home and all-books sections
-function renderEbooks() {
-// Sort by 'created' field, newest first
-loadedEbooks.sort((a, b) => new Date(b.created) - new Date(a.created));
-
-// Hide loading messages
-document.getElementById('homepage-loading').style.display = 'none';
-document.getElementById('allbooks-loading').style.display = 'none';
-document.getElementById('homepage-error').style.display = 'none';
-document.getElementById('allbooks-error').style.display = 'none';
-
-if (loadedEbooks.length === 0) {
-document.getElementById('homepage-ebook-list').innerHTML = '<p class="loading-message">No featured ebooks available yet.</p>';
-document.getElementById('all-books-list').innerHTML = '<p class="loading-message">No ebooks available yet.</p>';
-} else {
-loadProducts('homepage-ebook-list', loadedEbooks.slice(0, 3)); // Show 3 featured
-loadProducts('all-books-list', loadedEbooks); // Show all books
-}
-}
-
-// Function to fetch data from PocketBase
-async function fetchAndDisplayPosts() {
-try {
-// Show loading messages
-document.getElementById('homepage-loading').style.display = 'block';
-document.getElementById('allbooks-loading').style.display = 'block';
-document.getElementById('homepage-error').style.display = 'none';
-document.getElementById('allbooks-error').style.display = 'none';
-
-// Fetch records from the 'posts' collection
-const records = await pb.collection(COLLECTION_NAME).getFullList({
-sort: '-created', // Sort by creation date, newest first
-});
-
-loadedEbooks = records; // Store fetched records globally
-
-renderEbooks(); // Render the fetched ebooks
-} catch (error) {
-console.error('Error fetching posts:', error);
-// Show error messages and hide loading
-document.getElementById('homepage-loading').style.display = 'none';
-document.getElementById('allbooks-loading').style.display = 'none';
-document.getElementById('homepage-error').style.display = 'block';
-document.getElementById('allbooks-error').style.display = 'block';
-
-document.getElementById('homepage-ebook-list').innerHTML = ''; // Clear content
-document.getElementById('all-books-list').innerHTML = ''; // Clear content
-}
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-fetchAndDisplayPosts(); // Fetch ebooks from PocketBase
-restoreActiveSection(); // Restore previous section
-
-// Dummy auth controls
-const authControls = document.getElementById('authControls');
-authControls.innerHTML = `
-<button onclick="openSignInModal()">Sign In</button>
-<button onclick="openRegisterModal()">Register</button>
-`;
-});
-
-// Dummy function for modals (no real auth logic)
-function openSignInModal() {
-document.getElementById('signin-modal').classList.add('active');
-const signInError = document.querySelector('#signin-modal .error-message');
-if (signInError) signInError.style.display = 'block'; // Show error message by default
-}
-
-function openRegisterModal() {
-document.getElementById('register-modal').classList.add('active');
-const registerError = document.querySelector('#register-modal .error-message');
-if (registerError) registerError.style.display = 'block'; // Show error message by default
-}
-
-</script>
-
+        // Close modals if user clicks outside
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        });
+    </script>
 </body>
 </html>
