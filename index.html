@@ -1,14 +1,886 @@
- <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>My App</title>
-    </head>
-    <body>
-        <div id="root"></div>
-        <!-- Your JavaScript code would go here or be linked here -->
-        <script type="module" src="./main.js"></script> 
-        <!-- Or if not using modules: <script src="./main.js"></script> -->
-    </body>
-    </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Folio — Digital Bookshop</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1209;
+    --paper: #f5f0e8;
+    --cream: #faf7f2;
+    --amber: #c8821a;
+    --amber-light: #e8a840;
+    --rust: #8b3a1c;
+    --sage: #4a6741;
+    --muted: #7a6e5f;
+    --border: rgba(26,18,9,0.12);
+    --success: #2d6a2d;
+    --error: #8b1c1c;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 999; opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 3rem;
+    background: rgba(245,240,232,0.88); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; }
+  .nav-logo span { color: var(--amber); font-style: italic; }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a { text-decoration: none; color: var(--muted); font-size: 0.88rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-actions { display: flex; align-items: center; gap: 0.8rem; }
+
+  .btn-nav { padding: 0.55rem 1.4rem; border: 1.5px solid var(--ink); background: transparent; border-radius: 2px; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; color: var(--ink); transition: all 0.2s; }
+  .btn-nav:hover { background: var(--ink); color: var(--cream); }
+  .btn-nav.filled { background: var(--amber); border-color: var(--amber); color: white; }
+  .btn-nav.filled:hover { background: var(--rust); border-color: var(--rust); }
+
+  /* User menu */
+  .user-menu { position: relative; }
+  .user-avatar { width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--amber); color: white; font-family: 'Playfair Display', serif; font-weight: 700; font-size: 0.9rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+  .user-avatar:hover { transform: scale(1.08); }
+  .user-dropdown { display: none; position: absolute; top: calc(100% + 0.6rem); right: 0; background: white; border: 1px solid var(--border); border-radius: 3px; min-width: 190px; box-shadow: 0 8px 32px rgba(26,18,9,0.12); overflow: hidden; }
+  .user-dropdown.open { display: block; }
+  .user-dropdown-header { padding: 0.9rem 1rem 0.7rem; border-bottom: 1px solid var(--border); }
+  .user-dropdown-name { font-weight: 600; font-size: 0.85rem; }
+  .user-dropdown-email { font-size: 0.72rem; color: var(--muted); margin-top: 0.1rem; }
+  .user-dropdown a, .user-dropdown button { display: block; width: 100%; text-align: left; padding: 0.7rem 1rem; text-decoration: none; font-size: 0.83rem; color: var(--ink); background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
+  .user-dropdown a:hover, .user-dropdown button:hover { background: var(--paper); }
+  .user-dropdown .signout { color: var(--rust); border-top: 1px solid var(--border); }
+
+  /* ── TOAST ── */
+  #toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; padding: 0.85rem 1.4rem; border-radius: 3px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 6px 24px rgba(26,18,9,0.15); transform: translateY(6px); opacity: 0; transition: all 0.3s ease; pointer-events: none; max-width: 320px; }
+  #toast.show { opacity: 1; transform: translateY(0); }
+  #toast.success { background: var(--ink); color: var(--cream); }
+  #toast.error { background: var(--error); color: white; }
+  #toast.info { background: var(--amber); color: white; }
+
+  /* ── MODAL ── */
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(26,18,9,0.55); backdrop-filter: blur(4px); z-index: 500; align-items: center; justify-content: center; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: var(--cream); border-radius: 4px; padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: 0 24px 80px rgba(26,18,9,0.25); position: relative; animation: modalIn 0.25s ease; }
+  @keyframes modalIn { from{opacity:0;transform:scale(0.96) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)} }
+  .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; cursor: pointer; font-size: 1.3rem; color: var(--muted); line-height: 1; transition: color 0.2s; }
+  .modal-close:hover { color: var(--ink); }
+  .modal-logo { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900; margin-bottom: 0.25rem; }
+  .modal-logo span { color: var(--amber); font-style: italic; }
+  .modal-subtitle { font-size: 0.83rem; color: var(--muted); margin-bottom: 1.8rem; }
+  .modal-tabs { display: flex; margin-bottom: 1.8rem; border-bottom: 2px solid var(--border); }
+  .modal-tab { padding: 0.5rem 1.2rem; background: none; border: none; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+  .modal-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+  .form-group { margin-bottom: 1.1rem; }
+  .form-label { display: block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
+  .form-input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 2px; background: white; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--ink); outline: none; transition: border-color 0.2s; }
+  .form-input:focus { border-color: var(--amber); }
+  .btn-submit { width: 100%; padding: 0.9rem; background: var(--ink); color: var(--cream); border: none; border-radius: 2px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.25s; margin-top: 0.5rem; }
+  .btn-submit:hover { background: var(--amber); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .form-error { color: var(--error); font-size: 0.78rem; margin-top: 0.3rem; display: none; }
+
+  /* ── HERO ── */
+  .hero { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; padding-top: 5rem; overflow: hidden; }
+  .hero-left { display: flex; flex-direction: column; justify-content: center; padding: 6rem 4rem 6rem 6rem; position: relative; }
+  .hero-eyebrow { font-size: 0.78rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; animation: fadeUp 0.8s ease both; }
+  .hero-eyebrow::before { content: ''; display: block; width: 2rem; height: 1.5px; background: var(--amber); }
+  .hero-title { font-family: 'Playfair Display', serif; font-size: clamp(3rem,5vw,5rem); font-weight: 900; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 1.5rem; animation: fadeUp 0.8s 0.1s ease both; }
+  .hero-title em { font-style: italic; color: var(--amber); }
+  .hero-sub { font-size: 1rem; color: var(--muted); line-height: 1.75; max-width: 36ch; margin-bottom: 2.5rem; font-weight: 300; animation: fadeUp 0.8s 0.2s ease both; }
+  .hero-ctas { display: flex; gap: 1rem; align-items: center; animation: fadeUp 0.8s 0.3s ease both; }
+  .btn-primary { padding: 0.9rem 2.2rem; background: var(--ink); color: var(--cream); border: none; border-radius: 2px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.25s; }
+  .btn-primary:hover { background: var(--amber); transform: translateY(-2px); }
+  .btn-ghost { padding: 0.9rem 2.2rem; background: transparent; color: var(--ink); border: none; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 400; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; transition: color 0.2s; }
+  .btn-ghost:hover { color: var(--amber); }
+  .hero-stats { display: flex; gap: 2.5rem; margin-top: 3.5rem; padding-top: 2rem; border-top: 1px solid var(--border); animation: fadeUp 0.8s 0.4s ease both; }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; color: var(--ink); line-height: 1; }
+  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.25rem; }
+  .hero-right { background: var(--paper); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; animation: fadeIn 1s 0.3s ease both; }
+  .hero-right::before { content: ''; position: absolute; bottom: -10%; right: -10%; width: 60%; height: 60%; border-radius: 50%; background: radial-gradient(circle, rgba(200,130,26,0.15) 0%, transparent 70%); }
+  .book-stack { position: relative; width: 320px; height: 420px; }
+  .book-card { position: absolute; border-radius: 4px; box-shadow: 8px 12px 40px rgba(26,18,9,0.18); transition: transform 0.3s ease; overflow: hidden; }
+  .book-card:hover { transform: translateY(-6px) rotate(0deg) !important; z-index: 10; }
+  .book-1 { width:160px; height:230px; background:linear-gradient(145deg,#2c4a6e,#1a2f47); top:80px; left:20px; transform:rotate(-4deg); }
+  .book-2 { width:155px; height:220px; background:linear-gradient(145deg,#5c3317,#3d2010); top:60px; left:130px; transform:rotate(2deg); z-index:2; }
+  .book-3 { width:150px; height:210px; background:linear-gradient(145deg,#2d5a27,#1a3916); top:95px; left:75px; transform:rotate(-1deg); z-index:3; }
+  .book-inner { width:100%; height:100%; padding:1.5rem 1rem; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+  .book-inner::after { content:''; position:absolute; top:0; left:0; width:6px; height:100%; background:rgba(0,0,0,0.2); }
+  .book-genre { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.12em; color:rgba(255,255,255,0.5); }
+  .book-title-card { font-family:'Playfair Display',serif; font-size:1rem; color:white; line-height:1.3; font-weight:700; }
+  .book-author-card { font-size:0.65rem; color:rgba(255,255,255,0.6); font-style:italic; }
+  .featured-badge { position:absolute; top:1.5rem; right:1.5rem; background:var(--amber); color:white; font-size:0.65rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; padding:0.35rem 0.8rem; border-radius:1px; }
+
+  /* ── MARQUEE ── */
+  .marquee-wrapper { background:var(--ink); padding:0.85rem 0; overflow:hidden; white-space:nowrap; }
+  .marquee-track { display:inline-flex; gap:3rem; animation:marquee 25s linear infinite; }
+  .marquee-item { font-size:0.75rem; font-weight:500; letter-spacing:0.12em; text-transform:uppercase; color:rgba(245,240,232,0.6); display:flex; align-items:center; gap:1rem; }
+  .marquee-item::after { content:'✦'; color:var(--amber); font-size:0.6rem; }
+
+  /* ── SECTIONS ── */
+  .section { padding: 6rem 6rem; }
+  .section-header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:3rem; }
+  .section-label { font-size:0.72rem; font-weight:500; letter-spacing:0.2em; text-transform:uppercase; color:var(--amber); margin-bottom:0.5rem; }
+  .section-title { font-family:'Playfair Display',serif; font-size:2.4rem; font-weight:700; line-height:1.15; letter-spacing:-0.02em; }
+  .section-link { font-size:0.82rem; color:var(--muted); text-decoration:none; display:flex; align-items:center; gap:0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.25rem; transition:all 0.2s; flex-shrink:0; margin-bottom:0.4rem; }
+  .section-link:hover { color:var(--amber); border-color:var(--amber); }
+
+  /* ── GENRE GRID ── */
+  .genre-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:1rem; }
+  .genre-card { aspect-ratio:3/4; border-radius:3px; position:relative; overflow:hidden; cursor:pointer; transition:transform 0.3s; }
+  .genre-card:hover { transform:scale(1.03); }
+  .genre-card:hover .genre-overlay { opacity:1; }
+  .genre-bg { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:4rem; opacity:0.6; }
+  .genre-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(26,18,9,0.85) 40%,transparent 100%); display:flex; flex-direction:column; justify-content:flex-end; padding:1.2rem; opacity:0.7; transition:opacity 0.3s; }
+  .genre-name { font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; color:white; line-height:1.2; }
+  .genre-count { font-size:0.72rem; color:rgba(255,255,255,0.6); margin-top:0.2rem; }
+
+  /* ── BOOKS GRID ── */
+  .books-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:2rem; }
+  .skeleton { background:linear-gradient(90deg,var(--paper) 25%,rgba(26,18,9,0.08) 50%,var(--paper) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:3px; }
+  @keyframes shimmer { from{background-position:200% 0}to{background-position:-200% 0} }
+
+  .book-tile { cursor:pointer; transition:transform 0.2s; }
+  .book-tile:hover { transform:translateY(-4px); }
+  .book-cover { aspect-ratio:2/3; border-radius:3px; margin-bottom:1rem; position:relative; overflow:hidden; box-shadow:4px 8px 24px rgba(26,18,9,0.12); transition:box-shadow 0.3s; }
+  .book-tile:hover .book-cover { box-shadow:8px 16px 40px rgba(26,18,9,0.22); }
+  .book-cover-inner { width:100%; height:100%; display:flex; flex-direction:column; padding:1.5rem 1.2rem; justify-content:space-between; position:relative; }
+  .book-cover-inner::after { content:''; position:absolute; top:0; left:0; width:7px; height:100%; background:rgba(0,0,0,0.22); }
+  .book-tag { font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.5); font-weight:500; }
+  .book-title-tile { font-family:'Playfair Display',serif; font-size:1.05rem; font-weight:700; color:white; line-height:1.25; }
+  .book-meta { display:flex; align-items:center; justify-content:space-between; margin-top:0.6rem; }
+  .book-author { font-size:0.78rem; color:var(--muted); font-style:italic; }
+  .book-price { font-size:0.88rem; font-weight:600; color:var(--ink); }
+  .book-price .original { font-size:0.72rem; color:var(--muted); text-decoration:line-through; margin-right:0.25rem; }
+  .book-price .sale { color:var(--rust); }
+  .book-rating { font-size:0.72rem; color:var(--muted); display:flex; align-items:center; gap:0.3rem; margin-top:0.3rem; }
+  .stars { color:var(--amber-light); letter-spacing:-0.05em; }
+
+  /* Wishlist btn */
+  .wishlist-btn { position:absolute; top:0.6rem; right:0.6rem; z-index:5; background:rgba(26,18,9,0.55); border:none; border-radius:50%; width:2rem; height:2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1rem; transition:all 0.2s; backdrop-filter:blur(4px); opacity:0; pointer-events:none; }
+  .book-tile:hover .wishlist-btn { opacity:1; pointer-events:auto; }
+  .wishlist-btn.active { background:var(--amber); opacity:1; pointer-events:auto; }
+  .wishlist-btn:hover { transform:scale(1.15); }
+
+  /* ── PROMO ── */
+  .promo-banner { margin:0 6rem; background:var(--ink); border-radius:4px; padding:4rem; display:grid; grid-template-columns:1fr auto; align-items:center; gap:3rem; position:relative; overflow:hidden; }
+  .promo-banner::before { content:'❧'; position:absolute; right:12rem; top:50%; transform:translateY(-50%); font-size:15rem; color:rgba(255,255,255,0.03); font-family:'Playfair Display',serif; pointer-events:none; }
+  .promo-label { font-size:0.72rem; font-weight:500; letter-spacing:0.2em; text-transform:uppercase; color:var(--amber); margin-bottom:0.75rem; }
+  .promo-title { font-family:'Playfair Display',serif; font-size:2.4rem; font-weight:900; color:white; line-height:1.1; margin-bottom:1rem; }
+  .promo-title em { font-style:italic; color:var(--amber); }
+  .promo-desc { color:rgba(245,240,232,0.6); font-size:0.92rem; max-width:45ch; line-height:1.7; }
+  .promo-actions { display:flex; flex-direction:column; gap:1rem; align-items:center; flex-shrink:0; }
+  .btn-promo { padding:1rem 2.5rem; background:var(--amber); color:white; border:none; border-radius:2px; font-family:'DM Sans',sans-serif; font-size:0.88rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; white-space:nowrap; transition:all 0.25s; }
+  .btn-promo:hover { background:var(--amber-light); transform:translateY(-2px); }
+  .promo-note { font-size:0.72rem; color:rgba(245,240,232,0.4); }
+
+  /* ── TESTIMONIALS ── */
+  .testimonials { background:var(--paper); }
+  .testimonials-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:2rem; }
+  .testimonial-card { background:var(--cream); border:1px solid var(--border); border-radius:3px; padding:2rem; }
+  .quote-mark { font-family:'Playfair Display',serif; font-size:4rem; color:var(--amber); line-height:0.8; margin-bottom:1rem; opacity:0.4; }
+  .testimonial-text { font-size:0.92rem; color:var(--ink); line-height:1.75; font-style:italic; margin-bottom:1.5rem; font-family:'Playfair Display',serif; }
+  .testimonial-author { display:flex; align-items:center; gap:0.75rem; }
+  .author-avatar { width:2.5rem; height:2.5rem; border-radius:50%; background:var(--amber); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-weight:700; color:white; font-size:1rem; flex-shrink:0; }
+  .author-name { font-size:0.82rem; font-weight:600; }
+  .author-handle { font-size:0.72rem; color:var(--muted); }
+
+  /* ── NEWSLETTER ── */
+  .newsletter { padding:6rem; text-align:center; max-width:620px; margin:0 auto; }
+  .newsletter-title { font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:700; margin-bottom:1rem; }
+  .newsletter-sub { color:var(--muted); font-size:0.92rem; line-height:1.7; margin-bottom:2rem; }
+  .newsletter-form { display:flex; max-width:420px; margin:0 auto; border:1.5px solid var(--ink); border-radius:2px; overflow:hidden; }
+  .newsletter-input { flex:1; padding:0.85rem 1.2rem; border:none; background:white; font-family:'DM Sans',sans-serif; font-size:0.88rem; outline:none; color:var(--ink); }
+  .newsletter-input::placeholder { color:var(--muted); }
+  .newsletter-btn { padding:0.85rem 1.5rem; background:var(--ink); color:var(--cream); border:none; font-family:'DM Sans',sans-serif; font-size:0.78rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:background 0.2s; white-space:nowrap; }
+  .newsletter-btn:hover { background:var(--amber); }
+  .newsletter-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+  /* ── WISHLIST PANEL ── */
+  .wishlist-panel { position:fixed; top:0; right:0; bottom:0; width:380px; background:var(--cream); box-shadow:-8px 0 40px rgba(26,18,9,0.12); z-index:300; transform:translateX(100%); transition:transform 0.35s cubic-bezier(0.4,0,0.2,1); display:flex; flex-direction:column; }
+  .wishlist-panel.open { transform:translateX(0); }
+  .wishlist-header { padding:1.5rem 1.5rem 1rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .wishlist-title { font-family:'Playfair Display',serif; font-size:1.3rem; font-weight:700; }
+  .wishlist-close { background:none; border:none; cursor:pointer; font-size:1.3rem; color:var(--muted); transition:color 0.2s; }
+  .wishlist-close:hover { color:var(--ink); }
+  .wishlist-body { flex:1; overflow-y:auto; padding:1rem 1.5rem; }
+  .wishlist-empty { text-align:center; padding:3rem 1rem; color:var(--muted); font-style:italic; font-size:0.9rem; line-height:1.7; }
+  .wishlist-item { display:flex; gap:1rem; padding:1rem 0; border-bottom:1px solid var(--border); align-items:flex-start; }
+  .wishlist-item-cover { width:52px; height:72px; border-radius:2px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.5rem; box-shadow:2px 4px 12px rgba(26,18,9,0.12); }
+  .wishlist-item-info { flex:1; }
+  .wishlist-item-title { font-family:'Playfair Display',serif; font-size:0.9rem; font-weight:700; line-height:1.3; }
+  .wishlist-item-author { font-size:0.75rem; color:var(--muted); font-style:italic; margin-top:0.15rem; }
+  .wishlist-item-price { font-size:0.82rem; font-weight:600; color:var(--amber); margin-top:0.3rem; }
+  .wishlist-remove { background:none; border:none; cursor:pointer; color:var(--muted); font-size:1rem; transition:color 0.2s; flex-shrink:0; }
+  .wishlist-remove:hover { color:var(--rust); }
+
+  /* ── FOOTER ── */
+  footer { background:var(--ink); padding:4rem 6rem 2.5rem; color:rgba(245,240,232,0.7); }
+  .footer-top { display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; gap:3rem; margin-bottom:3rem; padding-bottom:3rem; border-bottom:1px solid rgba(245,240,232,0.1); }
+  .footer-logo { font-family:'Playfair Display',serif; font-size:1.8rem; font-weight:900; color:var(--cream); margin-bottom:1rem; }
+  .footer-logo span { color:var(--amber); font-style:italic; }
+  .footer-desc { font-size:0.82rem; line-height:1.7; max-width:28ch; }
+  .footer-col-title { font-size:0.72rem; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--cream); margin-bottom:1.2rem; }
+  .footer-links { list-style:none; display:flex; flex-direction:column; gap:0.7rem; }
+  .footer-links a { text-decoration:none; color:rgba(245,240,232,0.55); font-size:0.85rem; transition:color 0.2s; }
+  .footer-links a:hover { color:var(--amber); }
+  .footer-bottom { display:flex; align-items:center; justify-content:space-between; font-size:0.75rem; color:rgba(245,240,232,0.3); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn { from{opacity:0}to{opacity:1} }
+  @keyframes marquee { from{transform:translateX(0)}to{transform:translateX(-50%)} }
+
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-track { background:var(--cream); }
+  ::-webkit-scrollbar-thumb { background:var(--amber); border-radius:3px; }
+
+  /* PocketBase status */
+  .pb-status { position:fixed; bottom:1rem; left:1rem; z-index:9998; display:flex; align-items:center; gap:0.5rem; background:var(--ink); color:var(--cream); padding:0.4rem 0.9rem; border-radius:20px; font-size:0.7rem; font-weight:500; letter-spacing:0.05em; opacity:0.75; }
+  .pb-dot { width:7px; height:7px; border-radius:50%; background:#ccc; }
+  .pb-dot.connected { background:#5cb85c; box-shadow:0 0 6px #5cb85c; }
+  .pb-dot.error { background:#d9534f; }
+
+  @media(max-width:1200px){.section{padding:5rem 3rem}.promo-banner{margin:0 3rem}.footer-top{grid-template-columns:1fr 1fr}footer{padding:4rem 3rem 2rem}nav{padding:1.2rem 2rem}}
+  @media(max-width:900px){.hero{grid-template-columns:1fr;min-height:auto}.hero-right{min-height:400px}.hero-left{padding:5rem 3rem 3rem}.genre-grid{grid-template-columns:repeat(3,1fr)}.books-grid{grid-template-columns:repeat(2,1fr)}.testimonials-grid{grid-template-columns:1fr}.nav-links{display:none}.newsletter{padding:4rem 2rem}.wishlist-panel{width:100%}}
+</style>
+</head>
+<body>
+
+<!-- ── AUTH MODAL ── -->
+<div class="modal-backdrop" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-logo">Fo<span>lio</span></div>
+    <div class="modal-subtitle">Your personal digital library awaits</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('signin')">Sign In</button>
+      <button class="modal-tab" onclick="switchTab('signup')">Create Account</button>
+    </div>
+    <!-- Sign In -->
+    <div id="signinForm">
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="siEmail" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="siPassword" placeholder="••••••••" autocomplete="current-password"></div>
+      <div class="form-error" id="siError"></div>
+      <button class="btn-submit" id="siBtn" onclick="signIn()">Sign In</button>
+    </div>
+    <!-- Sign Up -->
+    <div id="signupForm" style="display:none">
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" id="suName" placeholder="Jane Austen" autocomplete="name"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="suEmail" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="form-group"><label class="form-label">Password</label><input class="form-input" type="password" id="suPassword" placeholder="min. 8 characters" autocomplete="new-password"></div>
+      <div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" type="password" id="suPasswordConfirm" placeholder="••••••••" autocomplete="new-password"></div>
+      <div class="form-error" id="suError"></div>
+      <button class="btn-submit" id="suBtn" onclick="signUp()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── WISHLIST PANEL ── -->
+<div class="wishlist-panel" id="wishlistPanel">
+  <div class="wishlist-header">
+    <div class="wishlist-title">My Wishlist</div>
+    <button class="wishlist-close" onclick="toggleWishlist()">✕</button>
+  </div>
+  <div class="wishlist-body" id="wishlistBody">
+    <div class="wishlist-empty">Your wishlist is empty.<br>Hover a book and click ♡ to save it.</div>
+  </div>
+</div>
+
+<!-- ── NAV ── -->
+<nav>
+  <a href="#" class="nav-logo">Fo<span>lio</span></a>
+  <ul class="nav-links">
+    <li><a href="#">Browse</a></li>
+    <li><a href="#">New Releases</a></li>
+    <li><a href="#">Bestsellers</a></li>
+    <li><a href="#">Authors</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="btn-nav" onclick="toggleWishlist()" id="wishlistNavBtn" style="display:none">♡ Wishlist <span id="wishlistCount" style="color:var(--amber)"></span></button>
+    <div id="authButtons" style="display:flex;gap:0.8rem">
+      <button class="btn-nav" onclick="openModal('signin')">Sign in</button>
+      <button class="btn-nav filled" onclick="openModal('signup')">Start free trial</button>
+    </div>
+    <div class="user-menu" id="userMenu" style="display:none">
+      <button class="user-avatar" id="userAvatar" onclick="toggleUserMenu()">?</button>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="user-dropdown-header">
+          <div class="user-dropdown-name" id="dropdownName">Reader</div>
+          <div class="user-dropdown-email" id="dropdownEmail"></div>
+        </div>
+        <a href="#">My Library</a>
+        <a href="#" onclick="toggleWishlist();toggleUserMenu()">Wishlist</a>
+        <a href="#">Account Settings</a>
+        <button class="signout" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">New Season Collection</div>
+    <h1 class="hero-title">Where every<br>page becomes<br>an <em>adventure.</em></h1>
+    <p class="hero-sub">Discover over 50,000 ebooks across every genre. Read anywhere, anytime, on any device.</p>
+    <div class="hero-ctas">
+      <button class="btn-primary" onclick="openModal('signup')">Explore Library</button>
+      <button class="btn-ghost">See how it works →</button>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-num">50K+</div><div class="stat-label">Ebooks</div></div>
+      <div><div class="stat-num">1.2M</div><div class="stat-label">Readers</div></div>
+      <div><div class="stat-num">120+</div><div class="stat-label">Genres</div></div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <span class="featured-badge">Featured</span>
+    <div class="book-stack">
+      <div class="book-card book-1"><div class="book-inner"><div class="book-genre">Fiction</div><div><div class="book-title-card">The Midnight Cartographer</div><div class="book-author-card">— Elena Vasquez</div></div></div></div>
+      <div class="book-card book-2"><div class="book-inner"><div class="book-genre">History</div><div><div class="book-title-card">Empires of the Forgotten Sea</div><div class="book-author-card">— Dr. James Okafor</div></div></div></div>
+      <div class="book-card book-3"><div class="book-inner"><div class="book-genre">Science</div><div><div class="book-title-card">The Quiet Universe</div><div class="book-author-card">— Priya Mehta</div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MARQUEE ── -->
+<div class="marquee-wrapper"><div class="marquee-track">
+  <span class="marquee-item">Fiction</span><span class="marquee-item">Non-Fiction</span><span class="marquee-item">Science Fiction</span><span class="marquee-item">Mystery &amp; Thriller</span><span class="marquee-item">Romance</span><span class="marquee-item">Biography</span><span class="marquee-item">Self-Help</span><span class="marquee-item">History</span><span class="marquee-item">Fantasy</span><span class="marquee-item">Philosophy</span><span class="marquee-item">Children's</span><span class="marquee-item">Technology</span>
+  <span class="marquee-item">Fiction</span><span class="marquee-item">Non-Fiction</span><span class="marquee-item">Science Fiction</span><span class="marquee-item">Mystery &amp; Thriller</span><span class="marquee-item">Romance</span><span class="marquee-item">Biography</span><span class="marquee-item">Self-Help</span><span class="marquee-item">History</span><span class="marquee-item">Fantasy</span><span class="marquee-item">Philosophy</span><span class="marquee-item">Children's</span><span class="marquee-item">Technology</span>
+</div></div>
+
+<!-- ── GENRES ── -->
+<section class="section">
+  <div class="section-header">
+    <div><div class="section-label">Explore</div><h2 class="section-title">Browse by Genre</h2></div>
+    <a href="#" class="section-link">View all genres →</a>
+  </div>
+  <div class="genre-grid">
+    <div class="genre-card"><div class="genre-bg" style="background:linear-gradient(135deg,#1a2f47,#2c4a6e)">🚀</div><div class="genre-overlay"><div class="genre-name">Sci-Fi &amp; Fantasy</div><div class="genre-count">4,820 books</div></div></div>
+    <div class="genre-card"><div class="genre-bg" style="background:linear-gradient(135deg,#3d2010,#6b3520)">🔍</div><div class="genre-overlay"><div class="genre-name">Mystery &amp; Thriller</div><div class="genre-count">6,210 books</div></div></div>
+    <div class="genre-card"><div class="genre-bg" style="background:linear-gradient(135deg,#1a3916,#2d5a27)">🌿</div><div class="genre-overlay"><div class="genre-name">Biographies</div><div class="genre-count">3,140 books</div></div></div>
+    <div class="genre-card"><div class="genre-bg" style="background:linear-gradient(135deg,#3d1a2e,#6b2e50)">💫</div><div class="genre-overlay"><div class="genre-name">Romance</div><div class="genre-count">7,560 books</div></div></div>
+    <div class="genre-card"><div class="genre-bg" style="background:linear-gradient(135deg,#3a2d10,#6b5220)">📜</div><div class="genre-overlay"><div class="genre-name">History</div><div class="genre-count">5,390 books</div></div></div>
+  </div>
+</section>
+
+<!-- ── BESTSELLERS ── -->
+<section class="section" style="padding-top:0">
+  <div class="section-header">
+    <div><div class="section-label">Trending Now</div><h2 class="section-title">Bestselling Titles</h2></div>
+    <a href="#" class="section-link">See all bestsellers →</a>
+  </div>
+  <div class="books-grid" id="booksGrid">
+    <div class="book-tile"><div class="book-cover skeleton" style="aspect-ratio:2/3;margin-bottom:0"></div><div class="skeleton" style="height:1rem;margin-top:1rem;border-radius:2px;width:60%"></div></div>
+    <div class="book-tile"><div class="book-cover skeleton" style="aspect-ratio:2/3;margin-bottom:0"></div><div class="skeleton" style="height:1rem;margin-top:1rem;border-radius:2px;width:50%"></div></div>
+    <div class="book-tile"><div class="book-cover skeleton" style="aspect-ratio:2/3;margin-bottom:0"></div><div class="skeleton" style="height:1rem;margin-top:1rem;border-radius:2px;width:70%"></div></div>
+    <div class="book-tile"><div class="book-cover skeleton" style="aspect-ratio:2/3;margin-bottom:0"></div><div class="skeleton" style="height:1rem;margin-top:1rem;border-radius:2px;width:55%"></div></div>
+  </div>
+</section>
+
+<!-- ── PROMO ── -->
+<div class="promo-banner">
+  <div>
+    <div class="promo-label">Limited Time Offer</div>
+    <h2 class="promo-title">Unlimited reading<br>for <em>one low price.</em></h2>
+    <p class="promo-desc">Join Folio Premium and get unlimited access to our entire library. No per-book fees. Cancel anytime.</p>
+  </div>
+  <div class="promo-actions">
+    <button class="btn-promo" onclick="openModal('signup')">Start 30 days free</button>
+    <div class="promo-note">No credit card required</div>
+  </div>
+</div>
+
+<!-- ── TESTIMONIALS ── -->
+<section class="section testimonials" style="margin-top:6rem">
+  <div class="section-header"><div><div class="section-label">What Readers Say</div><h2 class="section-title">Loved by book lovers<br>everywhere</h2></div></div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card"><div class="quote-mark">"</div><p class="testimonial-text">Folio changed the way I read. The curation is exceptional — I've discovered more new authors in one month than in the past three years combined.</p><div class="testimonial-author"><div class="author-avatar">S</div><div><div class="author-name">Sophie Andersson</div><div class="author-handle">@sophiereads · 312 books read</div></div></div></div>
+    <div class="testimonial-card"><div class="quote-mark">"</div><p class="testimonial-text">The reading experience is beautiful — clean, distraction-free, and syncs seamlessly across all my devices. My library has never felt so accessible.</p><div class="testimonial-author"><div class="author-avatar" style="background:var(--sage)">T</div><div><div class="author-name">Thomas Achebe</div><div class="author-handle">@tacBooks · 198 books read</div></div></div></div>
+    <div class="testimonial-card"><div class="quote-mark">"</div><p class="testimonial-text">I was skeptical at first, but the selection is genuinely impressive. Found rare out-of-print editions I'd been hunting for years. Worth every penny.</p><div class="testimonial-author"><div class="author-avatar" style="background:var(--rust)">M</div><div><div class="author-name">Mira Fontaine</div><div class="author-handle">@mirafontaine · 540 books read</div></div></div></div>
+  </div>
+</section>
+
+<!-- ── NEWSLETTER ── -->
+<div style="text-align:center;padding:5rem 2rem">
+  <div class="newsletter">
+    <div class="section-label" style="display:inline-block;margin-bottom:0.5rem">Stay in the loop</div>
+    <h2 class="newsletter-title">New releases,<br>curated for you</h2>
+    <p class="newsletter-sub">Join 200,000+ readers who get weekly recommendations, author spotlights, and exclusive early access to new titles.</p>
+    <div class="newsletter-form">
+      <input class="newsletter-input" type="email" id="nlEmail" placeholder="your@email.com">
+      <button class="newsletter-btn" id="nlBtn" onclick="subscribeNewsletter()">Subscribe</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-top">
+    <div><div class="footer-logo">Fo<span>lio</span></div><p class="footer-desc">The world's most beautiful digital bookshop. Discover, read, and share extraordinary books.</p></div>
+    <div><div class="footer-col-title">Library</div><ul class="footer-links"><li><a href="#">Browse All</a></li><li><a href="#">New Releases</a></li><li><a href="#">Bestsellers</a></li><li><a href="#">Free Titles</a></li><li><a href="#">Classics</a></li></ul></div>
+    <div><div class="footer-col-title">Company</div><ul class="footer-links"><li><a href="#">About Us</a></li><li><a href="#">Authors</a></li><li><a href="#">Publishers</a></li><li><a href="#">Blog</a></li><li><a href="#">Careers</a></li></ul></div>
+    <div><div class="footer-col-title">Support</div><ul class="footer-links"><li><a href="#">Help Center</a></li><li><a href="#">Contact</a></li><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 Folio Inc. All rights reserved.</span><span>Made with love for readers everywhere ✦</span></div>
+</footer>
+
+<div class="pb-status" id="pbStatus"><div class="pb-dot" id="pbDot"></div><span id="pbLabel">Connecting…</span></div>
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  POCKETBASE CONFIG
+//  Change PB_URL if your server runs elsewhere
+// ════════════════════════════════════════════════════════
+const PB_URL = 'http://127.0.0.1:8090';
+
+/*
+  REQUIRED POCKETBASE COLLECTIONS
+  ─────────────────────────────────────────────────────────
+  1. users  (built-in Auth collection)
+     Fields: name (Text)
+
+  2. books
+     Fields:
+       title         Text    required
+       author        Text    required
+       genre         Text
+       price         Number
+       original_price Number  (for showing strike-through)
+       rating        Number  (1–5)
+       rating_count  Number
+       cover_color   Text    (CSS gradient string)
+       cover_emoji   Text    (single emoji)
+       bestseller    Bool
+
+  3. wishlists
+     Fields:
+       user   Relation → users   required
+       book   Relation → books   required
+     API Rules:
+       List/View  →  @request.auth.id != ""
+       Create     →  @request.auth.id != ""
+       Delete     →  user = @request.auth.id
+
+  4. newsletter_subscribers
+     Fields:
+       email  Email   required  unique
+     API Rules:
+       Create  →  ""  (public)
+  ─────────────────────────────────────────────────────────
+*/
+
+// ── STATE ────────────────────────────────────────────────
+let currentUser = null;
+let authToken   = null;
+let wishlistIds = new Set();
+let wishlistMap = {};          // bookId → { recordId, book }
+let booksCache  = [];
+
+// ── API HELPER ───────────────────────────────────────────
+async function pbFetch(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (authToken) headers['Authorization'] = authToken;
+  const res  = await fetch(`${PB_URL}/api/${path}`, { ...opts, headers });
+  const data = await res.json();
+  if (!res.ok) throw data;
+  return data;
+}
+
+// ── CONNECTION CHECK ─────────────────────────────────────
+async function checkConnection() {
+  try {
+    const r = await fetch(`${PB_URL}/api/health`);
+    if (r.ok) {
+      document.getElementById('pbDot').className   = 'pb-dot connected';
+      document.getElementById('pbLabel').textContent = 'PocketBase connected';
+    } else throw new Error();
+  } catch {
+    document.getElementById('pbDot').className   = 'pb-dot error';
+    document.getElementById('pbLabel').textContent = 'PocketBase offline';
+  }
+}
+
+// ── TOAST ────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 3400);
+}
+
+// ── MODAL ────────────────────────────────────────────────
+function openModal(tab = 'signin') {
+  document.getElementById('authModal').classList.add('open');
+  switchTab(tab);
+}
+function closeModal() { document.getElementById('authModal').classList.remove('open'); }
+
+document.getElementById('authModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+function switchTab(tab) {
+  document.getElementById('signinForm').style.display  = tab === 'signin' ? 'block' : 'none';
+  document.getElementById('signupForm').style.display  = tab === 'signup' ? 'block' : 'none';
+  document.querySelectorAll('.modal-tab').forEach((el, i) => {
+    el.classList.toggle('active', (i === 0) === (tab === 'signin'));
+  });
+  ['siError','suError'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+}
+
+function showFormError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ── SIGN IN ──────────────────────────────────────────────
+async function signIn() {
+  const email    = document.getElementById('siEmail').value.trim();
+  const password = document.getElementById('siPassword').value;
+  if (!email || !password) return showFormError('siError', 'Please fill in all fields.');
+
+  const btn = document.getElementById('siBtn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  try {
+    const data = await pbFetch('collections/users/auth-with-password', {
+      method: 'POST',
+      body: JSON.stringify({ identity: email, password })
+    });
+    authToken   = data.token;
+    currentUser = data.record;
+    localStorage.setItem('pb_token', authToken);
+    localStorage.setItem('pb_user', JSON.stringify(currentUser));
+    closeModal();
+    updateAuthUI();
+    await loadWishlist();
+    showToast(`Welcome back, ${currentUser.name || 'Reader'}! 📚`);
+  } catch (err) {
+    showFormError('siError', err?.message || 'Invalid email or password.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+// ── SIGN UP ──────────────────────────────────────────────
+async function signUp() {
+  const name    = document.getElementById('suName').value.trim();
+  const email   = document.getElementById('suEmail').value.trim();
+  const pass    = document.getElementById('suPassword').value;
+  const confirm = document.getElementById('suPasswordConfirm').value;
+
+  if (!name || !email || !pass) return showFormError('suError', 'Please fill in all fields.');
+  if (pass.length < 8)          return showFormError('suError', 'Password must be at least 8 characters.');
+  if (pass !== confirm)         return showFormError('suError', 'Passwords do not match.');
+
+  const btn = document.getElementById('suBtn');
+  btn.disabled = true; btn.textContent = 'Creating account…';
+
+  try {
+    await pbFetch('collections/users/records', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password: pass, passwordConfirm: confirm })
+    });
+    const data = await pbFetch('collections/users/auth-with-password', {
+      method: 'POST',
+      body: JSON.stringify({ identity: email, password: pass })
+    });
+    authToken   = data.token;
+    currentUser = data.record;
+    localStorage.setItem('pb_token', authToken);
+    localStorage.setItem('pb_user', JSON.stringify(currentUser));
+    closeModal();
+    updateAuthUI();
+    showToast(`Welcome to Folio, ${name}! 🎉`);
+  } catch (err) {
+    const msg = err?.data?.email?.message || err?.message || 'Could not create account.';
+    showFormError('suError', msg);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Account';
+  }
+}
+
+// ── SIGN OUT ─────────────────────────────────────────────
+function signOut() {
+  authToken = null; currentUser = null;
+  wishlistIds.clear(); wishlistMap = {};
+  localStorage.removeItem('pb_token');
+  localStorage.removeItem('pb_user');
+  updateAuthUI();
+  renderWishlistPanel();
+  renderBooksGrid();
+  showToast('Signed out. See you soon! 👋', 'info');
+}
+
+// ── AUTH UI ──────────────────────────────────────────────
+function updateAuthUI() {
+  const in_ = !!currentUser;
+  document.getElementById('authButtons').style.display    = in_ ? 'none'  : 'flex';
+  document.getElementById('userMenu').style.display       = in_ ? 'block' : 'none';
+  document.getElementById('wishlistNavBtn').style.display = in_ ? 'block' : 'none';
+  if (in_) {
+    document.getElementById('userAvatar').textContent   = (currentUser.name || 'R')[0].toUpperCase();
+    document.getElementById('dropdownName').textContent  = currentUser.name  || 'Reader';
+    document.getElementById('dropdownEmail').textContent = currentUser.email || '';
+  }
+}
+
+function toggleUserMenu() { document.getElementById('userDropdown').classList.toggle('open'); }
+document.addEventListener('click', e => {
+  const m = document.getElementById('userMenu');
+  if (m && !m.contains(e.target)) document.getElementById('userDropdown').classList.remove('open');
+});
+
+// ── BOOKS ────────────────────────────────────────────────
+const PALETTES = [
+  'linear-gradient(145deg,#1e3a5f,#0d2035)',
+  'linear-gradient(145deg,#5c2018,#8b3a1c)',
+  'linear-gradient(145deg,#2a4a1e,#3d6e2a)',
+  'linear-gradient(145deg,#3b2250,#5c3a7a)',
+  'linear-gradient(145deg,#2c4a6e,#1a2f47)',
+  'linear-gradient(145deg,#5c3317,#3d2010)',
+  'linear-gradient(145deg,#1a3916,#2d5a27)',
+  'linear-gradient(145deg,#3d1a2e,#6b2e50)',
+];
+
+const FALLBACK_BOOKS = [
+  { id:'f1', title:'The Glass Meridian',              author:'Clara Osei-Bonsu', genre:'Literary Fiction', price:9.99,  original_price:14.99, rating:4.9, rating_count:2100, cover_color:PALETTES[0], cover_emoji:'📘' },
+  { id:'f2', title:'Daughters of the Ottoman Sun',    author:'Nalini Puri',      genre:'Historical',       price:12.99, rating:4.7, rating_count:1800, cover_color:PALETTES[1], cover_emoji:'🌙' },
+  { id:'f3', title:'The Slow Art of Doing Less',      author:'Marcus Johanssen', genre:'Self-Help',        price:11.99, rating:4.8, rating_count:3400, cover_color:PALETTES[2], cover_emoji:'🌿' },
+  { id:'f4', title:'Echoes at the Edge of Known Space',author:'Dev Ramaswamy',   genre:'Sci-Fi',           price:8.99,  original_price:13.99, rating:4.6, rating_count:987, cover_color:PALETTES[3], cover_emoji:'🚀' },
+];
+
+async function loadBooks() {
+  try {
+    let data = await pbFetch('collections/books/records?filter=(bestseller=true)&sort=-rating&perPage=8');
+    if (!data.items || data.items.length === 0) {
+      data = await pbFetch('collections/books/records?sort=-rating&perPage=8');
+    }
+    booksCache = data.items || [];
+  } catch {
+    booksCache = [];
+  }
+  renderBooksGrid();
+}
+
+function starsFor(r) {
+  r = parseFloat(r) || 0;
+  const full = Math.floor(r), half = r % 1 >= 0.5 ? 1 : 0;
+  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - half);
+}
+
+function fmtCount(n) {
+  return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : (n || '—');
+}
+
+function renderBooksGrid() {
+  const grid  = document.getElementById('booksGrid');
+  const books = booksCache.length > 0 ? booksCache : FALLBACK_BOOKS;
+
+  grid.innerHTML = books.map((book, i) => {
+    const bg    = book.cover_color || PALETTES[i % PALETTES.length];
+    const emoji = book.cover_emoji || '📖';
+    const price = typeof book.price === 'number' ? `$${book.price.toFixed(2)}` : (book.price || '');
+    const orig  = book.original_price;
+    const priceHtml = orig
+      ? `<span class="original">$${parseFloat(orig).toFixed(2)}</span><span class="sale">${price}</span>`
+      : price;
+    const rating = parseFloat(book.rating || 0).toFixed(1);
+    const inWL   = wishlistIds.has(book.id);
+
+    return `<div class="book-tile" onclick="handleBookClick('${book.id}')">
+      <div class="book-cover">
+        <div class="book-cover-inner" style="background:${bg}">
+          <div class="book-tag">${book.genre || 'Ebook'}</div>
+          <div>
+            <div style="font-size:2rem;margin-bottom:0.4rem">${emoji}</div>
+            <div class="book-title-tile">${book.title}</div>
+          </div>
+        </div>
+        ${currentUser ? `<button class="wishlist-btn ${inWL ? 'active' : ''}"
+          id="wlbtn-${book.id}"
+          onclick="event.stopPropagation();toggleWishlistItem('${book.id}')"
+          title="${inWL ? 'Remove from wishlist' : 'Save to wishlist'}"
+        >${inWL ? '♥' : '♡'}</button>` : ''}
+      </div>
+      <div class="book-meta">
+        <div class="book-author">${book.author}</div>
+        <div class="book-price">${priceHtml}</div>
+      </div>
+      <div class="book-rating"><span class="stars">${starsFor(rating)}</span> ${rating} (${fmtCount(book.rating_count)})</div>
+    </div>`;
+  }).join('');
+}
+
+function handleBookClick(id) {
+  if (!currentUser) { openModal('signin'); showToast('Sign in to access this book', 'info'); }
+}
+
+// ── WISHLIST ─────────────────────────────────────────────
+async function loadWishlist() {
+  if (!currentUser) return;
+  try {
+    const data = await pbFetch(`collections/wishlists/records?filter=(user="${currentUser.id}")&expand=book&perPage=200`);
+    wishlistIds.clear(); wishlistMap = {};
+    (data.items || []).forEach(item => {
+      if (item.expand?.book) {
+        wishlistIds.add(item.book);
+        wishlistMap[item.book] = { recordId: item.id, book: item.expand.book };
+      }
+    });
+    updateWishlistCount();
+    renderWishlistPanel();
+    renderBooksGrid();
+  } catch {}
+}
+
+async function toggleWishlistItem(bookId) {
+  if (!currentUser) { openModal('signin'); return; }
+
+  const btn = document.getElementById(`wlbtn-${bookId}`);
+  if (btn) { btn.style.opacity = '0.4'; btn.style.pointerEvents = 'none'; }
+
+  if (wishlistIds.has(bookId)) {
+    // Remove
+    try {
+      const rid = wishlistMap[bookId]?.recordId;
+      if (rid) await pbFetch(`collections/wishlists/records/${rid}`, { method: 'DELETE' });
+      wishlistIds.delete(bookId);
+      delete wishlistMap[bookId];
+      showToast('Removed from wishlist', 'info');
+    } catch { showToast('Could not remove — try again', 'error'); }
+  } else {
+    // Add
+    try {
+      const item = await pbFetch('collections/wishlists/records', {
+        method: 'POST',
+        body: JSON.stringify({ user: currentUser.id, book: bookId })
+      });
+      const book = booksCache.find(b => b.id === bookId) || FALLBACK_BOOKS.find(b => b.id === bookId) || { id: bookId };
+      wishlistIds.add(bookId);
+      wishlistMap[bookId] = { recordId: item.id, book };
+      showToast('Saved to wishlist ♥');
+    } catch { showToast('Could not save — try again', 'error'); }
+  }
+
+  updateWishlistCount();
+  renderWishlistPanel();
+  renderBooksGrid();
+}
+
+function updateWishlistCount() {
+  const n = wishlistIds.size;
+  document.getElementById('wishlistCount').textContent = n > 0 ? `(${n})` : '';
+}
+
+function toggleWishlist() {
+  if (!currentUser) { openModal('signin'); return; }
+  document.getElementById('wishlistPanel').classList.toggle('open');
+}
+
+function renderWishlistPanel() {
+  const body  = document.getElementById('wishlistBody');
+  const items = Object.values(wishlistMap);
+  if (items.length === 0) {
+    body.innerHTML = '<div class="wishlist-empty">Your wishlist is empty.<br>Hover a book and click ♡ to save it.</div>';
+    return;
+  }
+  body.innerHTML = items.map(({ book }) => {
+    const bg    = book.cover_color || PALETTES[0];
+    const emoji = book.cover_emoji || '📖';
+    const price = typeof book.price === 'number' ? `$${book.price.toFixed(2)}` : '—';
+    return `<div class="wishlist-item">
+      <div class="wishlist-item-cover" style="background:${bg}">${emoji}</div>
+      <div class="wishlist-item-info">
+        <div class="wishlist-item-title">${book.title || 'Untitled'}</div>
+        <div class="wishlist-item-author">${book.author || ''}</div>
+        <div class="wishlist-item-price">${price}</div>
+      </div>
+      <button class="wishlist-remove" onclick="toggleWishlistItem('${book.id}')" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ── NEWSLETTER ───────────────────────────────────────────
+async function subscribeNewsletter() {
+  const email = document.getElementById('nlEmail').value.trim();
+  if (!email || !email.includes('@')) return showToast('Please enter a valid email', 'error');
+
+  const btn = document.getElementById('nlBtn');
+  btn.disabled = true; btn.textContent = 'Subscribing…';
+
+  try {
+    await pbFetch('collections/newsletter_subscribers/records', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+    document.getElementById('nlEmail').value = '';
+    showToast('You\'re subscribed! Welcome to Folio reads 📬');
+  } catch (err) {
+    const msg = (err?.data?.email?.message || err?.message || '').toLowerCase();
+    if (msg.includes('unique') || msg.includes('already')) {
+      showToast('You\'re already subscribed! 😊', 'info');
+    } else {
+      showToast('Could not subscribe — try again later.', 'error');
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = 'Subscribe';
+  }
+}
+
+// ── RESTORE SESSION ──────────────────────────────────────
+function restoreSession() {
+  const token = localStorage.getItem('pb_token');
+  const user  = localStorage.getItem('pb_user');
+  if (token && user) {
+    try {
+      authToken   = token;
+      currentUser = JSON.parse(user);
+      updateAuthUI();
+      loadWishlist();
+    } catch {
+      localStorage.removeItem('pb_token');
+      localStorage.removeItem('pb_user');
+    }
+  }
+}
+
+// ── KEYBOARD SHORTCUTS ───────────────────────────────────
+document.getElementById('siPassword').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
+document.getElementById('suPasswordConfirm').addEventListener('keydown', e => { if (e.key === 'Enter') signUp(); });
+document.getElementById('nlEmail').addEventListener('keydown', e => { if (e.key === 'Enter') subscribeNewsletter(); });
+
+// ── BOOT ─────────────────────────────────────────────────
+(async () => {
+  await checkConnection();
+  restoreSession();
+  await loadBooks();
+})();
+</script>
+</body>
+</html>
