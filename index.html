@@ -636,7 +636,8 @@ footer{background:var(--ink);padding:4rem 5rem 2.5rem;color:rgba(245,240,232,.7)
 // ════════════════════════════════════════════════════
 // CONFIG — change this to your PocketBase server URL
 // ════════════════════════════════════════════════════
-const PB = 'http://127.0.0.1:8090';
+// PocketBase Configuration  
+const PB_URL = 'https://additions-slim-seattle-boxing.trycloudflare.com';
 
 // ── STATE ─────────────────────────────────────────
 let user = null, token = null;
@@ -647,8 +648,7 @@ let allBooks = [], activeGenre = '';
 async function api(path, opts = {}) {
   const h = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
   if (token) h['Authorization'] = token;
-  const r = await fetch(`${PB}/api/${path}`, { ...opts, headers: h });
-  const d = await r.json();
+  const r = await fetch(`${PB}/api/${path}`, { ...opts, headers: h });  const d = await r.json();
   if (!r.ok) throw d;
   return d;
 }
